@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/config/firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/navigation/app_router.dart';
@@ -10,6 +11,9 @@ import 'core/constants/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables (API keys, secrets, etc.) from .env
+  await dotenv.load(fileName: '.env');
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
@@ -28,9 +32,7 @@ void main() async {
   ]);
 
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 🔥 DATA CLEAR & SEED OPTIONS 🔥
@@ -54,14 +56,14 @@ void main() async {
   //   2. Check browser console (F12 -> Console) for success messages
   //   3. After it runs, COMMENT THEM BACK (add //) to prevent running again
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   // OPTION 1: Clear all EXCEPT users (uncomment to use):
   // final clearService = SeedService();
   // await clearService.clearAllExceptUsers();
   // await clearService.seedAll();
   // debugPrint('✅ Data reset complete! Users preserved. Restart app normally now.');
   // // Don't return - let app start normally
-  
+
   // OPTION 2: Clear ALL including users (uncomment to use):
   // final clearService = SeedService();
   // await clearService.clearAllCollections(); // ⚠️ Deletes EVERYTHING including users
@@ -71,20 +73,16 @@ void main() async {
   // await clearService.seedRefereeJobs();
   // debugPrint('✅ Complete reset done! All data deleted. Facilities seeded. Restart app normally now.');
   // // Don't return - let app start normally
-  
+
   // OPTION 3: Seed demo accounts (uncomment to use):
   // final demoSeedService = SeedService();
   // await demoSeedService.seedDemoAccounts(); // Creates Public, Student, Student(Referee), Admin accounts
   // debugPrint('✅ Demo accounts created! You can now login with these accounts.');
   // Don't return - let app start normally
-  
+
   // Start app immediately - don't block on seeding check
   // Seed check will happen in background after app starts
-  runApp(
-    const ProviderScope(
-      child: PutraSportHubApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: PutraSportHubApp()));
 
   // Check and seed in background (non-blocking)
   // This prevents delay on app startup
@@ -111,7 +109,9 @@ class PutraSportHubApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF0A1F1A), // Match splash background
+        scaffoldBackgroundColor: const Color(
+          0xFF0A1F1A,
+        ), // Match splash background
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppTheme.primaryGreen,
           brightness: Brightness.dark, // Dark theme to prevent light flash

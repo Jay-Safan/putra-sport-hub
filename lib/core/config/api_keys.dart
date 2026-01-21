@@ -1,7 +1,8 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// Centralized API Keys Configuration
 ///
-/// Add your API keys here for all external services.
-/// For production, consider using environment variables or secure storage.
+/// Values are loaded from environment variables via flutter_dotenv (.env file).
 class ApiKeys {
   ApiKeys._(); // Prevent instantiation
 
@@ -9,58 +10,41 @@ class ApiKeys {
   // GOOGLE SERVICES
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Google Maps Static API Key
-  /// Used for displaying static map images in booking details
-  static const String googleMapsStatic =
-      'AIzaSyAq7MhJ1xbwp5b9IYcVr9lzu4VyAd7scmU';
+  /// Google Maps Static API Key (GOOGLE_MAPS_STATIC_KEY)
+  static String get googleMapsStatic => _env('GOOGLE_MAPS_STATIC_KEY');
 
   // ═══════════════════════════════════════════════════════════════════════════
   // AI SERVICES
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Google Gemini API Key
-  /// Used for:
-  /// - AI chatbot assistant (ChatbotService)
-  ///
-  /// Get your API key from: https://aistudio.google.com/app/apikey
-  static const String gemini = 'AIzaSyA_sdLfeaxbVvW7PIezs2yjr82f1UwCl8M';
+  /// Google Gemini API Key (GEMINI_API_KEY)
+  static String get gemini => _env('GEMINI_API_KEY');
 
   // ═══════════════════════════════════════════════════════════════════════════
   // IMAGE STORAGE (CLOUDINARY)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Cloudinary Cloud Name
-  /// Used for image storage (profile images)
-  /// Free tier: 25 GB storage + 25 GB bandwidth/month
-  ///
-  /// Get your credentials from: https://cloudinary.com/console
-  static const String cloudinaryCloudName = 'dw3xmf8vm';
+  /// Cloudinary Cloud Name (CLOUDINARY_CLOUD_NAME)
+  static String get cloudinaryCloudName => _env('CLOUDINARY_CLOUD_NAME');
 
-  /// Cloudinary API Key
-  static const String cloudinaryApiKey = '452589634447949';
+  /// Cloudinary API Key (CLOUDINARY_API_KEY)
+  static String get cloudinaryApiKey => _env('CLOUDINARY_API_KEY');
 
-  /// Cloudinary API Secret
-  /// Required for signed uploads (if not using upload preset)
-  static const String cloudinaryApiSecret = 'VR_JQcTPNDr9Zhu9lkF7WX5JNsE';
+  /// Cloudinary API Secret (CLOUDINARY_API_SECRET)
+  static String get cloudinaryApiSecret => _env('CLOUDINARY_API_SECRET');
 
-  /// Cloudinary Upload Preset
-  /// Recommended: Create an unsigned upload preset in Cloudinary Console
-  /// This allows uploads without requiring API secret in the app
-  ///
-  /// Setup: https://cloudinary.com/documentation/upload_presets
-  /// Set to null to use signed uploads (more reliable, uses API secret)
-  static const String? cloudinaryUploadPreset =
-      null; // Use signed uploads with API secret
+  /// Cloudinary Upload Preset (CLOUDINARY_UPLOAD_PRESET, optional)
+  static String? get cloudinaryUploadPreset {
+    final val = dotenv.env['CLOUDINARY_UPLOAD_PRESET'];
+    return (val == null || val.isEmpty) ? null : val;
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // WEATHER SERVICES
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// OpenWeatherMap API Key
-  /// Used for weather checking to block outdoor bookings during rain
-  ///
-  /// Get your API key from: https://openweathermap.org/api
-  static const String openWeatherMap = '28782cf39a07c0664034afcdebe7db17';
+  /// OpenWeatherMap API Key (OPENWEATHERMAP_API_KEY)
+  static String get openWeatherMap => _env('OPENWEATHERMAP_API_KEY');
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPER METHODS
@@ -72,8 +56,8 @@ class ApiKeys {
         gemini.isNotEmpty &&
         cloudinaryCloudName.isNotEmpty &&
         (cloudinaryApiKey.isNotEmpty ||
-            cloudinaryUploadPreset != null &&
-                cloudinaryUploadPreset!.isNotEmpty) &&
+            (cloudinaryUploadPreset != null &&
+                cloudinaryUploadPreset!.isNotEmpty)) &&
         openWeatherMap.isNotEmpty;
   }
 
@@ -86,7 +70,7 @@ class ApiKeys {
     if (cloudinaryCloudName.isEmpty) {
       missing.add('Cloudinary Cloud Name (for image storage)');
     }
-    if ((cloudinaryApiKey.isEmpty) &&
+    if (cloudinaryApiKey.isEmpty &&
         (cloudinaryUploadPreset == null || cloudinaryUploadPreset!.isEmpty)) {
       missing.add('Cloudinary API Key OR Upload Preset (for image uploads)');
     }
@@ -102,15 +86,19 @@ class ApiKeys {
     final hasCloudinary =
         cloudinaryCloudName.isNotEmpty &&
         (cloudinaryApiKey.isNotEmpty ||
-            cloudinaryUploadPreset != null &&
-                cloudinaryUploadPreset!.isNotEmpty);
+            (cloudinaryUploadPreset != null &&
+                cloudinaryUploadPreset!.isNotEmpty));
 
     return {
       'Google Maps': googleMapsStatic.isNotEmpty,
       'AI Chatbot (Gemini)': gemini.isNotEmpty,
       'Image Storage (Cloudinary)': hasCloudinary,
-      'Weather Service (OpenWeatherMap)':
-          openWeatherMap.isNotEmpty,
+      'Weather Service (OpenWeatherMap)': openWeatherMap.isNotEmpty,
     };
+  }
+
+  static String _env(String key) {
+    final val = dotenv.env[key];
+    return val == null || val.isEmpty ? '' : val;
   }
 }
