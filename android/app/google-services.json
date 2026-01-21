@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "289707656668",
+    "project_id": "putra-sport-hub",
+    "storage_bucket": "putra-sport-hub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:289707656668:android:c852a5c9f5d0662eea7b19",
+        "android_client_info": {
+          "package_name": "com.upm.putra_sport_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrnIC3WoxHYO6qlaPxlwJjvBjfyrUAP3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

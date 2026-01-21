@@ -1,0 +1,36 @@
+# PutraSportHub Analysis Options
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
+    unused_element: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "lib/generated_plugin_registrant.dart"
+
+linter:
+  rules:
+    # Effective Dart rules
+    prefer_single_quotes: true
+    prefer_relative_imports: true
+    avoid_print: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    
+    # Flutter specific
+    use_key_in_widget_constructors: true
+    avoid_unnecessary_containers: true
+    sized_box_for_whitespace: true
+    
+    # Code style
+    sort_pub_dependencies: true
+    always_declare_return_types: true
+    avoid_empty_else: true
+    avoid_returning_null_for_void: true
+    
+    # Disabled rules
+    lines_longer_than_80_chars: false

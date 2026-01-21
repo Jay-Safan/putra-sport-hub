@@ -1,0 +1,229 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PRODUCTION SECURITY RULES
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Helper: Check if user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    // Helper: Check if user owns the document
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+    
+    // Helper: Check if current user is admin
+    function isAdmin() {
+      return isAuth() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+    
+    // Helper: Check if user is participant in split bill booking
+    function isSplitBillParticipant(bookingData) {
+      return isAuth() && 
+             bookingData.splitBillParticipants != null &&
+             request.auth.uid in bookingData.splitBillParticipants.keys();
+    }
+    
+    // Helper: Check if user is booking organizer or participant
+    function isBookingOwnerOrParticipant(bookingData) {
+      return isAuth() && (
+        bookingData.userId == request.auth.uid ||
+        isSplitBillParticipant(bookingData)
+      );
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FACILITIES - Public read, authenticated write (admin-only for updates)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /facilities/{facilityId} {
+      allow read: if true; // Public read - anyone can view facilities
+      allow create: if isAuth(); // Authenticated users can create (for seeding)
+      allow update, delete: if isAdmin(); // Only admins can modify facilities
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // USERS - Authenticated read, owner or admin write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /users/{userId} {
+      allow read: if isAuth(); // Authenticated users can read any user profile
+      allow create: if isAuth() && request.auth.uid == userId; // Users can create their own profile
+      allow update: if isOwner(userId) || isAdmin(); // Users can update their own profile, admins can update any
+      allow delete: if isAdmin(); // Only admins can delete user accounts
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BOOKINGS - Owner, participant, or admin can read/write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /bookings/{bookingId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isSplitBillParticipant(resource.data) ||
+        isAdmin()
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isSplitBillParticipant(resource.data) ||
+        isAdmin()
+      );
+      allow delete: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // REFEREE JOBS - Authenticated read, admin or system write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /referee_jobs/{jobId} {
+      allow read: if isAuth(); // Authenticated users can view available jobs
+      allow create: if isAuth(); // System creates jobs (via TournamentService/BookingService)
+      allow update: if isAuth() && (
+        resource.data.assignedReferees != null &&
+        request.auth.uid in resource.data.assignedReferees.keys() ||
+        isAdmin()
+      ); // Assigned referees can update (check-in, complete), admins can update any
+      allow delete: if isAdmin(); // Only admins can delete jobs
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MERIT RECORDS - Owner or admin can read, system/admin can write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /merit_records/{recordId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuth(); // System creates merit records (via MeritService)
+      allow update, delete: if isAdmin(); // Only admins can modify merit records
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // WALLETS - Owner or admin can read, system/admin can write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /wallets/{userId} {
+      allow read: if isOwner(userId) || isAdmin(); // Only owner or admin can read wallet
+      allow create: if isAuth() && request.auth.uid == userId; // Users can create their own wallet
+      allow update: if isAuth(); // System updates wallet (via PaymentService)
+      allow delete: if isAdmin(); // Only admins can delete wallets
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TRANSACTIONS - User or admin can read, system/admin can write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /transactions/{transactionId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuth(); // System creates transactions (via PaymentService)
+      allow update, delete: if isAdmin(); // Only admins can modify transactions
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ESCROW VAULT - Admin only (system-managed)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /escrow_vault/{escrowId} {
+      allow read, write: if isAdmin(); // Only admins can access escrow vault
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ESCROW - Authenticated users involved in escrow or admin can access
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /escrow/{escrowId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.refereeId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuth(); // System creates escrow (via PaymentService)
+      allow update: if isAuth(); // System updates escrow (payment processing)
+      allow delete: if isAdmin(); // Only admins can delete escrow
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BLACKOUT DATES - Public read, admin write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /blackout_dates/{dateId} {
+      allow read: if true; // Public read - anyone can view blackout dates
+      allow write: if isAdmin(); // Only admins can manage blackout dates
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RATINGS - Public read, authenticated create, owner/admin update/delete
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /ratings/{ratingId} {
+      allow read: if true; // Public read - ratings are visible to all
+      allow create: if isAuth(); // Authenticated users can create ratings
+      allow update, delete: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      ); // Users can modify their own ratings, admins can modify any
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TOURNAMENTS - Public read, organizer/participant/admin can write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /tournaments/{tournamentId} {
+      allow read: if true; // Public read - tournaments are visible to all
+      allow create: if isAuth(); // Authenticated users can create tournaments
+      allow update: if isAuth() && (
+        resource.data.organizerId == request.auth.uid ||
+        (resource.data.participants != null && request.auth.uid in resource.data.participants) ||
+        isAdmin()
+      ); // Organizer, participants, or admin can update
+      allow delete: if isAuth() && (
+        resource.data.organizerId == request.auth.uid ||
+        isAdmin()
+      ); // Only organizer or admin can delete
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NOTIFICATIONS - Owner or admin can read, system/admin can write
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /notifications/{notificationId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      ); // Users can only read their own notifications
+      allow create: if isAuth(); // System creates notifications (via NotificationService)
+      allow update: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      ); // Users can update their own notifications (mark as read), admins can update any
+      allow delete: if isAuth() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      ); // Users can delete their own notifications, admins can delete any
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ADMIN REVENUE - Admin only (system-managed revenue tracking)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    match /admin_revenue/{revenueId} {
+      allow read, write: if isAdmin(); // Only admins can access revenue data
+    }
+  }
+}
+  }
+}

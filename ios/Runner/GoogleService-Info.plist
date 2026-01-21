@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyCJQAKnYvbkUufBpcZIIM49KiNGXmousiI</string>
+	<key>GCM_SENDER_ID</key>
+	<string>289707656668</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.upm.putraSportHub</string>
+	<key>PROJECT_ID</key>
+	<string>putra-sport-hub</string>
+	<key>STORAGE_BUCKET</key>
+	<string>putra-sport-hub.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:289707656668:ios:d4e9b737c0b57f22ea7b19</string>
+</dict>
+</plist>
