@@ -38,14 +38,16 @@ class _BookingTicketCardState extends State<BookingTicketCard>
   @override
   void initState() {
     super.initState();
-    _isExpanded = widget.isExpanded;
+    // Always start with QR code collapsed for better UX
+    _isExpanded = false;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -124,9 +126,10 @@ class _BookingTicketCardState extends State<BookingTicketCard>
               AnimatedCrossFade(
                 firstChild: _buildCollapsedBottom(),
                 secondChild: _buildExpandedBottom(),
-                crossFadeState: _isExpanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
+                crossFadeState:
+                    _isExpanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
                 duration: const Duration(milliseconds: 300),
               ),
             ],
@@ -175,16 +178,17 @@ class _BookingTicketCardState extends State<BookingTicketCard>
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 1.5,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       widget.booking.facilityName,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 19,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        height: 1.2,
                       ),
                     ),
                   ],
@@ -193,8 +197,51 @@ class _BookingTicketCardState extends State<BookingTicketCard>
               _buildStatusBadge(),
             ],
           ),
-          const SizedBox(height: 24),
-          // Date and Time row
+          const SizedBox(height: 20),
+
+          // Booking ID and Reference
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.confirmation_number_outlined,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Booking ID: ',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    widget.booking.id.length > 8
+                        ? '${widget.booking.id.substring(0, 8).toUpperCase()}...'
+                        : widget.booking.id.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Date and Duration row
           Row(
             children: [
               Expanded(
@@ -212,19 +259,79 @@ class _BookingTicketCardState extends State<BookingTicketCard>
               Expanded(
                 child: _buildInfoItem(
                   icon: Icons.access_time_rounded,
-                  label: 'TIME',
-                  value: _formatTime(widget.booking.startTime),
+                  label: 'DURATION',
+                  value: _formatDuration(),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 20),
+
+          // Start and End time chips
+          Row(
+            children: [
+              Expanded(
+                child: _buildDetailChip(
+                  icon: Icons.schedule_outlined,
+                  label: 'Start Time',
+                  value: _formatTime(widget.booking.startTime),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildDetailChip(
+                  icon: Icons.schedule_outlined,
+                  label: 'End Time',
+                  value: _formatTime(widget.booking.endTime),
+                ),
+              ),
+            ],
+          ),
+
+          // Price information
+          if (widget.booking.totalAmount > 0) ...[
+            const SizedBox(height: 14),
+            _buildDetailChip(
+              icon: Icons.payments_outlined,
+              label: 'Total Amount',
+              value: 'RM ${widget.booking.totalAmount.toStringAsFixed(2)}',
+              isHighlighted: true,
+            ),
+          ],
+
+          // Court/Sub-unit information
           if (widget.booking.subUnit != null) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             _buildInfoChip(
               icon: Icons.location_on_outlined,
               text: widget.booking.subUnit!,
             ),
           ],
+
+          // Booking type and additional info
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildSmallChip(
+                icon: Icons.sports_outlined,
+                text: widget.booking.bookingType?.displayName ?? 'Practice',
+              ),
+              if (widget.booking.refereeJobId != null)
+                _buildSmallChip(
+                  icon: Icons.sports_soccer_outlined,
+                  text: 'Referee Assigned',
+                  color: AppTheme.successGreen,
+                ),
+              if (widget.booking.tournamentFormat != null)
+                _buildSmallChip(
+                  icon: Icons.emoji_events_outlined,
+                  text: widget.booking.tournamentFormat!.displayName,
+                  color: AppTheme.upmRed,
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -232,16 +339,13 @@ class _BookingTicketCardState extends State<BookingTicketCard>
 
   Widget _buildCollapsedBottom() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 22),
       decoration: BoxDecoration(
         // Add subtle gradient to match glassmorphic theme
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.white.withValues(alpha: 0.03),
-          ],
+          colors: [Colors.transparent, Colors.white.withValues(alpha: 0.03)],
         ),
       ),
       child: Row(
@@ -277,7 +381,7 @@ class _BookingTicketCardState extends State<BookingTicketCard>
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,7 +417,7 @@ class _BookingTicketCardState extends State<BookingTicketCard>
 
   Widget _buildExpandedBottom() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       child: Column(
         children: [
           // QR Code with glow
@@ -354,7 +458,7 @@ class _BookingTicketCardState extends State<BookingTicketCard>
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           // Action buttons
           Row(
             children: [
@@ -365,7 +469,7 @@ class _BookingTicketCardState extends State<BookingTicketCard>
                   onTap: widget.onAddToCalendar,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.share_outlined,
@@ -400,9 +504,10 @@ class _BookingTicketCardState extends State<BookingTicketCard>
             height: 2,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: index.isEven
-                  ? Colors.white.withValues(alpha: 0.3)
-                  : Colors.transparent,
+              color:
+                  index.isEven
+                      ? Colors.white.withValues(alpha: 0.3)
+                      : Colors.transparent,
               borderRadius: BorderRadius.circular(1),
             ),
           ),
@@ -478,18 +583,18 @@ class _BookingTicketCardState extends State<BookingTicketCard>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 22),
-          const SizedBox(height: 8),
+          Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 20),
+          const SizedBox(height: 6),
           Text(
             label,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
+              letterSpacing: 1.0,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             value,
             style: const TextStyle(
@@ -543,9 +648,7 @@ class _BookingTicketCardState extends State<BookingTicketCard>
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.25),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -578,9 +681,7 @@ class _BookingTicketCardState extends State<BookingTicketCard>
         decoration: BoxDecoration(
           color: AppTheme.errorRed.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppTheme.errorRed.withValues(alpha: 0.35),
-          ),
+          border: Border.all(color: AppTheme.errorRed.withValues(alpha: 0.35)),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -618,11 +719,129 @@ class _BookingTicketCardState extends State<BookingTicketCard>
     }
   }
 
+  Widget _buildDetailChip({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isHighlighted = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color:
+            isHighlighted
+                ? _getSportColor().withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              isHighlighted
+                  ? _getSportColor().withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color:
+                    isHighlighted
+                        ? _getSportColor()
+                        : Colors.white.withValues(alpha: 0.7),
+                size: 14,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              color: isHighlighted ? _getSportColor() : Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallChip({
+    required IconData icon,
+    required String text,
+    Color? color,
+  }) {
+    final chipColor = color ?? Colors.white.withValues(alpha: 0.7);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: chipColor.withValues(alpha: 0.3), width: 0.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: chipColor, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: chipColor,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDuration() {
+    final duration = widget.booking.endTime.difference(
+      widget.booking.startTime,
+    );
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+
+    if (hours > 0 && minutes > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (hours > 0) {
+      return '${hours}h';
+    } else {
+      return '${minutes}m';
+    }
+  }
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return '${days[date.weekday - 1]}, ${date.day} ${months[date.month - 1]}';
@@ -635,29 +854,49 @@ class _BookingTicketCardState extends State<BookingTicketCard>
   }
 
   double _calculatePerforatedLinePosition() {
-    // Calculate position based on actual content heights
+    // Calculate position to place line between the tags and QR code section
     // Top section padding: 24 (top)
-    // Header row height: ~70px (icon 26 + padding 14*2 + text)
-    // Spacing after header: 24
-    // Date/Time row height: ~62px (icon 22 + label 11 + value 15 + spacing)
-    // Additional if subUnit: spacing 20 + chip ~40 = 60
-    // Bottom section top padding: 20 (collapsed) or 24 (expanded)
-    
+    // Header row height: ~66px (icon + text with improved spacing)
+    // Spacing after header: 20
+    // Booking ID section: ~40px
+    // Spacing: 16
+    // Date/Duration row height: ~50px
+    // Spacing: 16
+    // Start/End time chips: ~40px
+    // Price section (if present): 14 + ~40px
+    // SubUnit section (if present): 14 + ~40px
+    // Context tags section: 14 + ~30px
+    // Bottom padding of top section: 24
+
     final hasSubUnit = widget.booking.subUnit != null;
-    
-    // Base height: top padding + header + spacing + date/time row
-    double baseHeight = 24.0 + 70.0 + 24.0 + 62.0;
-    
-    // Add subUnit height if it exists (spacing + chip)
-    if (hasSubUnit) {
-      baseHeight += 20.0 + 40.0; // spacing + chip height
+    final hasPrice = widget.booking.totalAmount > 0;
+
+    // Base height: top padding + header + spacing + booking ID + spacing
+    double baseHeight = 24.0 + 66.0 + 20.0 + 40.0 + 16.0;
+
+    // Add date/duration row + spacing
+    baseHeight += 50.0 + 16.0;
+
+    // Add time chips row
+    baseHeight += 40.0;
+
+    // Add price section if present
+    if (hasPrice) {
+      baseHeight += 14.0 + 40.0; // spacing + chip height
     }
-    
-    // Add bottom section top padding
-    final bottomPadding = _isExpanded ? 24.0 : 20.0;
-    
-    // Position line at the start of bottom section (subtract 1 to account for line thickness)
-    return baseHeight + bottomPadding - 1;
+
+    // Add subUnit height if it exists
+    if (hasSubUnit) {
+      baseHeight += 14.0 + 40.0; // spacing + chip height
+    }
+
+    // Add context tags section
+    baseHeight += 14.0 + 30.0; // spacing + tags height
+
+    // Add extra spacing to position line with equal spacing above and below
+    baseHeight += 65.0; // increased spacing after tags for equal visual balance
+
+    // Position line right between tags and QR section
+    return baseHeight;
   }
 }
-

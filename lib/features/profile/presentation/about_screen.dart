@@ -23,10 +23,7 @@ class AboutScreen extends ConsumerWidget {
         ),
         title: const Text(
           'About PutraSportHub',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -222,7 +219,7 @@ class AboutScreen extends ConsumerWidget {
                             'Secure in-app wallet for seamless payments',
                             AppTheme.accentGold,
                           ),
-                          
+
                           // Student-exclusive features
                           if (isStudent) ...[
                             const SizedBox(height: 16),
@@ -245,13 +242,6 @@ class AboutScreen extends ConsumerWidget {
                               'Tournaments',
                               'Create and join sports tournaments',
                               AppTheme.badmintonPurple,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildFeatureItem(
-                              Icons.people,
-                              'Split Bill',
-                              'Share booking costs with teammates',
-                              AppTheme.futsalBlue,
                             ),
                           ],
                         ],
@@ -398,11 +388,7 @@ class AboutScreen extends ConsumerWidget {
             color: color.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
+          child: Icon(icon, color: color, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -433,4 +419,3 @@ class AboutScreen extends ConsumerWidget {
     );
   }
 }
-

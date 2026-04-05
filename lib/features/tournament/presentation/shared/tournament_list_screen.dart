@@ -18,13 +18,15 @@ class TournamentListScreen extends ConsumerStatefulWidget {
   const TournamentListScreen({super.key});
 
   @override
-  ConsumerState<TournamentListScreen> createState() => _TournamentListScreenState();
+  ConsumerState<TournamentListScreen> createState() =>
+      _TournamentListScreenState();
 }
 
 class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
   int _selectedTab = 0; // 0: Discover, 1: My Active, 2: History
   SportType? _selectedSportFilter; // null = "All Sports"
-  String? _selectedRoleFilter; // null = "All", "organizer" = Organizing, "participant" = Participating
+  String?
+  _selectedRoleFilter; // null = "All", "organizer" = Organizing, "participant" = Participating
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +50,10 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                 onTap: () => context.push('/tournaments/join-by-code'),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.futsalBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
@@ -123,51 +128,54 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
         child: Stack(
           children: [
             // Background orbs - ignore pointer events
-            IgnorePointer(
-              child: _buildBackgroundOrbs(),
-            ),
+            IgnorePointer(child: _buildBackgroundOrbs()),
             SafeArea(
               top: true,
               child: Column(
                 children: [
                   // Custom tab buttons (fixed at top)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildTabButton(
-                            label: 'Discover',
-                            icon: Icons.explore,
-                            index: 0,
-                          ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildTabButton(
-                            label: 'My Active',
-                            icon: Icons.event_available,
-                            index: 1,
-                          ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildTabButton(
+                                label: 'Discover',
+                                icon: Icons.explore,
+                                index: 0,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildTabButton(
+                                label: 'My Active',
+                                icon: Icons.event_available,
+                                index: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildTabButton(
+                                label: 'History',
+                                icon: Icons.history,
+                                index: 2,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildTabButton(
-                            label: 'History',
-                            icon: Icons.history,
-                            index: 2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+                      )
                       .animate()
-                      .fadeIn(duration: 500.ms, delay: 100.ms, curve: Curves.easeOut)
+                      .fadeIn(
+                        duration: 500.ms,
+                        delay: 100.ms,
+                        curve: Curves.easeOut,
+                      )
                       .slideY(begin: 0.05, end: 0, duration: 500.ms),
                   // Sticky Sport Filter Bar with CustomScrollView
-                  Expanded(
-                    child: _buildTabContentWithSlivers(user),
-                  ),
+                  Expanded(child: _buildTabContentWithSlivers(user)),
                 ],
               ),
             ),
@@ -184,18 +192,18 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           top: -80,
           right: -60,
           child: Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.accentGold.withValues(alpha: 0.25),
-                  AppTheme.accentGold.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.accentGold.withValues(alpha: 0.25),
+                      AppTheme.accentGold.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -209,18 +217,18 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           bottom: 100,
           left: -80,
           child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.primaryGreen.withValues(alpha: 0.15),
-                  AppTheme.primaryGreen.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.15),
+                      AppTheme.primaryGreen.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -252,57 +260,63 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
               decoration: BoxDecoration(
-                gradient: isSelected
-                    ? LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryGreen.withValues(alpha: 0.4),
-                          AppTheme.primaryGreen.withValues(alpha: 0.3),
-                        ],
-                      )
-                    : LinearGradient(
-                        colors: [
-                          Colors.white.withValues(alpha: 0.08),
-                          Colors.white.withValues(alpha: 0.04),
-                        ],
-                      ),
+                gradient:
+                    isSelected
+                        ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.primaryGreen.withValues(alpha: 0.4),
+                            AppTheme.primaryGreen.withValues(alpha: 0.3),
+                          ],
+                        )
+                        : LinearGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: 0.08),
+                            Colors.white.withValues(alpha: 0.04),
+                          ],
+                        ),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isSelected
-                      ? AppTheme.primaryGreen.withValues(alpha: 0.5)
-                      : Colors.white.withValues(alpha: 0.15),
+                  color:
+                      isSelected
+                          ? AppTheme.primaryGreen.withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.15),
                   width: isSelected ? 1.5 : 1,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
+                boxShadow:
+                    isSelected
+                        ? [
+                          BoxShadow(
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                        : null,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     icon,
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.7),
+                    color:
+                        isSelected
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.7),
                     size: 20,
                   ),
                   const SizedBox(height: 6),
                   Text(
                     label,
                     style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.7),
+                      color:
+                          isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.7),
                       fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -323,7 +337,7 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
     required VoidCallback onClearFilter,
   }) {
     final hasActiveFilter = selectedSportFilter != null;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -395,7 +409,10 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
             GestureDetector(
               onTap: onClearFilter,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -466,37 +483,40 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           vertical: isSelected ? 10 : 8,
         ),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color.withValues(alpha: 0.25),
-                    color.withValues(alpha: 0.15),
-                  ],
-                )
-              : LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.06),
-                    Colors.white.withValues(alpha: 0.03),
-                  ],
-                ),
+          gradient:
+              isSelected
+                  ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withValues(alpha: 0.25),
+                      color.withValues(alpha: 0.15),
+                    ],
+                  )
+                  : LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.06),
+                      Colors.white.withValues(alpha: 0.03),
+                    ],
+                  ),
           borderRadius: BorderRadius.circular(isSelected ? 12 : 20),
           border: Border.all(
-            color: isSelected
-                ? color.withValues(alpha: 0.4)
-                : Colors.white.withValues(alpha: 0.1),
+            color:
+                isSelected
+                    ? color.withValues(alpha: 0.4)
+                    : Colors.white.withValues(alpha: 0.1),
             width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -543,37 +563,40 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           vertical: isSelected ? 10 : 8,
         ),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color.withValues(alpha: 0.25),
-                    color.withValues(alpha: 0.15),
-                  ],
-                )
-              : LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.06),
-                    Colors.white.withValues(alpha: 0.03),
-                  ],
-                ),
+          gradient:
+              isSelected
+                  ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withValues(alpha: 0.25),
+                      color.withValues(alpha: 0.15),
+                    ],
+                  )
+                  : LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.06),
+                      Colors.white.withValues(alpha: 0.03),
+                    ],
+                  ),
           borderRadius: BorderRadius.circular(isSelected ? 12 : 20),
           border: Border.all(
-            color: isSelected
-                ? color.withValues(alpha: 0.4)
-                : Colors.white.withValues(alpha: 0.1),
+            color:
+                isSelected
+                    ? color.withValues(alpha: 0.4)
+                    : Colors.white.withValues(alpha: 0.1),
             width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Text(
           label,
@@ -646,27 +669,38 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
 
     return tournamentsAsync.when(
       data: (allTournaments) {
-        var openTournaments = allTournaments.where((t) {
-          if (_isTournamentPast(t)) return false;
-          if (!t.isRegistrationOpen) return false;
-          if (user != null && t.isOrganizer(user.uid)) return false;
-          return true;
-        }).toList();
+        debugPrint('📊 Discover Tab Filtering');
+        debugPrint('   Total tournaments: ${allTournaments.length}');
+
+        var openTournaments =
+            allTournaments.where((t) {
+              if (_isTournamentPast(t)) return false;
+              if (!t.isRegistrationOpen) return false;
+              if (user != null && t.isOrganizer(user.uid)) return false;
+              return true;
+            }).toList();
+
+        debugPrint('   After filters: ${openTournaments.length}');
+        if (user != null) {
+          debugPrint('   User ID: ${user.uid}');
+        }
 
         openTournaments = _applySportFilter(openTournaments);
 
         if (openTournaments.isEmpty) {
           return [
             SliverFillRemaining(
-              hasScrollBody: false,
+              hasScrollBody: true,
               child: _buildEmptyState(
                 icon: Icons.explore_outlined,
-                title: _selectedSportFilter == null
-                    ? 'No Tournaments Available'
-                    : 'No ${_selectedSportFilter!.displayName} Tournaments',
-                message: user == null
-                    ? 'Sign in to discover and join tournaments!'
-                    : _selectedSportFilter == null
+                title:
+                    _selectedSportFilter == null
+                        ? 'No Tournaments Available'
+                        : 'No ${_selectedSportFilter!.displayName} Tournaments',
+                message:
+                    user == null
+                        ? 'Sign in to discover and join tournaments!'
+                        : _selectedSportFilter == null
                         ? 'No tournaments are currently open for registration.\n\nCreate your own tournament to get started!'
                         : 'No ${_selectedSportFilter!.displayName.toLowerCase()} tournaments are currently open for registration.',
                 showCreateButton: user?.isStudent ?? false,
@@ -675,43 +709,35 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           ];
         }
 
-        return [
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: _buildEmptyState(
-              icon: Icons.explore_outlined,
-              title: _selectedSportFilter == null
-                  ? 'No Tournaments Available'
-                  : 'No ${_selectedSportFilter!.displayName} Tournaments',
-              message: user == null
-                  ? 'Sign in to discover and join tournaments!'
-                  : _selectedSportFilter == null
-                      ? 'No tournaments are currently open for registration.\n\nCreate your own tournament to get started!'
-                      : 'No ${_selectedSportFilter!.displayName.toLowerCase()} tournaments are currently open for registration.',
-              showCreateButton: user?.isStudent ?? false,
-            ),
-          ),
-        ];
+        // Show tournament list when tournaments exist
+        return [_buildTournamentListSlivers(openTournaments, user: user)];
       },
-      loading: () => [
-        SliverPadding(
-          padding: const EdgeInsets.all(20),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => const ShimmerTournamentCard(),
-              childCount: 3,
+      loading:
+          () => [
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => const ShimmerTournamentCard(),
+                  childCount: 3,
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
-      error: (error, stack) => [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _buildErrorState(
-            ErrorHandler.getUserFriendlyErrorMessage(error, context: 'tournament', defaultMessage: 'Unable to load tournaments. Please try again.'),
-          ),
-        ),
-      ],
+          ],
+      error:
+          (error, stack) => [
+            SliverFillRemaining(
+              hasScrollBody: true,
+              child: _buildErrorState(
+                ErrorHandler.getUserFriendlyErrorMessage(
+                  error,
+                  context: 'tournament',
+                  defaultMessage:
+                      'Unable to load tournaments. Please try again.',
+                ),
+              ),
+            ),
+          ],
     );
   }
 
@@ -720,7 +746,7 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
     if (user == null) {
       return [
         SliverFillRemaining(
-          hasScrollBody: false,
+          hasScrollBody: true,
           child: _buildEmptyState(
             icon: Icons.person_outline,
             title: 'Sign In Required',
@@ -734,26 +760,34 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
 
     return tournamentsAsync.when(
       data: (userTournaments) {
-        var activeTournaments = userTournaments.where((t) => !_isTournamentPast(t)).toList();
-        
+        var activeTournaments =
+            userTournaments.where((t) => !_isTournamentPast(t)).toList();
+
         // Apply role filter
         activeTournaments = _applyRoleFilter(activeTournaments, user.uid);
-        
+
         // Apply sport filter
         final myTournaments = _applySportFilter(activeTournaments);
 
+        // Always show filter chips, even when empty
         if (myTournaments.isEmpty) {
           return [
+            // Keep filter chips visible for user flow
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: _buildRoleFilterChips(),
+              ),
+            ),
             SliverFillRemaining(
-              hasScrollBody: false,
+              hasScrollBody: true,
               child: _buildEmptyState(
                 icon: Icons.event_available_outlined,
-                title: _selectedSportFilter == null
-                    ? 'No Active Tournaments'
-                    : 'No Active ${_selectedSportFilter!.displayName} Tournaments',
-                message: _selectedSportFilter == null
-                    ? 'You don\'t have any active tournaments. Create one to get started!'
-                    : 'You don\'t have any active ${_selectedSportFilter!.displayName.toLowerCase()} tournaments.',
+                title: _getEmptyStateTitle(),
+                message: _getEmptyStateMessage(),
                 showCreateButton: user.isStudent,
               ),
             ),
@@ -770,28 +804,35 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           _buildTournamentListSlivers(myTournaments, user: user),
         ];
       },
-      loading: () => [
-        SliverPadding(
-          padding: const EdgeInsets.all(20),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: ShimmerCard(height: 200, borderRadius: 20),
+      loading:
+          () => [
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: ShimmerCard(height: 200, borderRadius: 20),
+                  ),
+                  childCount: 3,
+                ),
               ),
-              childCount: 3,
             ),
-          ),
-        ),
-      ],
-      error: (error, stack) => [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _buildErrorState(
-            ErrorHandler.getUserFriendlyErrorMessage(error, context: 'tournament', defaultMessage: 'Unable to load tournaments. Please try again.'),
-          ),
-        ),
-      ],
+          ],
+      error:
+          (error, stack) => [
+            SliverFillRemaining(
+              hasScrollBody: true,
+              child: _buildErrorState(
+                ErrorHandler.getUserFriendlyErrorMessage(
+                  error,
+                  context: 'tournament',
+                  defaultMessage:
+                      'Unable to load tournaments. Please try again.',
+                ),
+              ),
+            ),
+          ],
     );
   }
 
@@ -800,7 +841,7 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
     if (user == null) {
       return [
         SliverFillRemaining(
-          hasScrollBody: false,
+          hasScrollBody: true,
           child: _buildEmptyState(
             icon: Icons.person_outline,
             title: 'Sign In Required',
@@ -814,7 +855,8 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
 
     return tournamentsAsync.when(
       data: (userTournaments) {
-        var myPastTournaments = userTournaments.where((t) => _isTournamentPast(t)).toList();
+        var myPastTournaments =
+            userTournaments.where((t) => _isTournamentPast(t)).toList();
         myPastTournaments = _applySportFilter(myPastTournaments);
         myPastTournaments.sort((a, b) {
           final aDate = a.endDate ?? a.startDate;
@@ -825,15 +867,17 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
         if (myPastTournaments.isEmpty) {
           return [
             SliverFillRemaining(
-              hasScrollBody: false,
+              hasScrollBody: true,
               child: _buildEmptyState(
                 icon: Icons.history_outlined,
-                title: _selectedSportFilter == null
-                    ? 'No Past Tournaments'
-                    : 'No Past ${_selectedSportFilter!.displayName} Tournaments',
-                message: _selectedSportFilter == null
-                    ? 'You haven\'t participated in any past tournaments yet.'
-                    : 'You haven\'t participated in any past ${_selectedSportFilter!.displayName.toLowerCase()} tournaments.',
+                title:
+                    _selectedSportFilter == null
+                        ? 'No Past Tournaments'
+                        : 'No Past ${_selectedSportFilter!.displayName} Tournaments',
+                message:
+                    _selectedSportFilter == null
+                        ? 'You haven\'t participated in any past tournaments yet.'
+                        : 'You haven\'t participated in any past ${_selectedSportFilter!.displayName.toLowerCase()} tournaments.',
               ),
             ),
           ];
@@ -841,25 +885,32 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
 
         return [_buildTournamentListSlivers(myPastTournaments, user: user)];
       },
-      loading: () => [
-        SliverPadding(
-          padding: const EdgeInsets.all(20),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => const ShimmerTournamentCard(),
-              childCount: 3,
+      loading:
+          () => [
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => const ShimmerTournamentCard(),
+                  childCount: 3,
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
-      error: (error, stack) => [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _buildErrorState(
-            ErrorHandler.getUserFriendlyErrorMessage(error, context: 'tournament', defaultMessage: 'Unable to load tournaments. Please try again.'),
-          ),
-        ),
-      ],
+          ],
+      error:
+          (error, stack) => [
+            SliverFillRemaining(
+              hasScrollBody: true,
+              child: _buildErrorState(
+                ErrorHandler.getUserFriendlyErrorMessage(
+                  error,
+                  context: 'tournament',
+                  defaultMessage:
+                      'Unable to load tournaments. Please try again.',
+                ),
+              ),
+            ),
+          ],
     );
   }
 
@@ -872,7 +923,10 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
   }
 
   /// Apply role filter to tournaments (organizer or participant)
-  List<TournamentModel> _applyRoleFilter(List<TournamentModel> tournaments, String userId) {
+  List<TournamentModel> _applyRoleFilter(
+    List<TournamentModel> tournaments,
+    String userId,
+  ) {
     if (_selectedRoleFilter == null) {
       return tournaments; // "All" - return all
     }
@@ -882,10 +936,57 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
     }
 
     if (_selectedRoleFilter == 'participant') {
-      return tournaments.where((t) => t.isUserParticipating(userId) && !t.isOrganizer(userId)).toList();
+      return tournaments.where((t) {
+        try {
+          return t.isUserParticipating(userId) && !t.isOrganizer(userId);
+        } catch (e) {
+          debugPrint(
+            '⚠️ Error checking participation for tournament ${t.id}: $e',
+          );
+          return false; // Skip tournaments with data issues
+        }
+      }).toList();
     }
 
     return tournaments;
+  }
+
+  /// Get human-readable label for current role filter
+  String _getRoleFilterLabel() {
+    switch (_selectedRoleFilter) {
+      case 'organizer':
+        return 'Organizing';
+      case 'participant':
+        return 'Participating';
+      default:
+        return 'All';
+    }
+  }
+
+  /// Get empty state title based on current filters
+  String _getEmptyStateTitle() {
+    if (_selectedRoleFilter != null) {
+      return 'No ${_getRoleFilterLabel()} Tournaments';
+    }
+
+    if (_selectedSportFilter == null) {
+      return 'No Active Tournaments';
+    }
+
+    return 'No Active ${_selectedSportFilter!.displayName} Tournaments';
+  }
+
+  /// Get empty state message based on current filters
+  String _getEmptyStateMessage() {
+    if (_selectedRoleFilter != null) {
+      return 'You don\'t have any active tournaments where you\'re ${_getRoleFilterLabel().toLowerCase()}.\n\nTry changing the filter or create a new tournament!';
+    }
+
+    if (_selectedSportFilter == null) {
+      return 'You don\'t have any active tournaments. Create one to get started!';
+    }
+
+    return 'You don\'t have any active ${_selectedSportFilter!.displayName.toLowerCase()} tournaments.';
   }
 
   /// Build role filter chips for My Active tab
@@ -933,18 +1034,18 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
   /// 3. No endDate but startDate has passed and tournament is not in registration phase
   bool _isTournamentPast(TournamentModel tournament) {
     final now = DateTime.now();
-    
+
     // Explicitly completed or cancelled
     if (tournament.status == TournamentStatus.completed ||
         tournament.status == TournamentStatus.cancelled) {
       return true;
     }
-    
+
     // Has endDate and it's passed
     if (tournament.endDate != null && tournament.endDate!.isBefore(now)) {
       return true;
     }
-    
+
     // No endDate - check if startDate has passed
     // A tournament is considered past if:
     // - StartDate has passed AND
@@ -958,52 +1059,61 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           // give them a grace period (24 hours) after startDate
           // This handles single-day tournaments that finish on the same day
           final hoursSinceStart = now.difference(tournament.startDate).inHours;
-          
+
           if (tournament.status == TournamentStatus.inProgress ||
               tournament.status == TournamentStatus.registrationClosed) {
             // If more than 24 hours passed since start, likely finished
             return hoursSinceStart > 24;
           }
-          
+
           // For any other non-open status, consider it past
           return true;
         }
       }
     }
-    
+
     return false;
   }
 
   // Legacy tab methods removed - using Sliver versions instead
 
   /// Build sliver list from tournaments
-  Widget _buildTournamentListSlivers(List<TournamentModel> tournaments, {UserModel? user}) {
+  Widget _buildTournamentListSlivers(
+    List<TournamentModel> tournaments, {
+    UserModel? user,
+  }) {
     if (tournaments.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.only(
-        top: 20,
-        left: 16,
-        right: 16,
-        bottom: 100,
-      ),
+      padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 100),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final tournament = tournaments[index];
-            final currentUser = user ?? ref.read(currentUserProvider).valueOrNull;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildTournamentCard(context, tournament, currentUser: currentUser)
-                  .animate()
-                  .fadeIn(duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut)
-                  .slideY(begin: 0.1, end: 0, duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut),
-            );
-          },
-          childCount: tournaments.length,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final tournament = tournaments[index];
+          final currentUser = user ?? ref.read(currentUserProvider).valueOrNull;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildTournamentCard(
+                  context,
+                  tournament,
+                  currentUser: currentUser,
+                )
+                .animate()
+                .fadeIn(
+                  duration: 400.ms,
+                  delay: (index * 50).ms,
+                  curve: Curves.easeOut,
+                )
+                .slideY(
+                  begin: 0.1,
+                  end: 0,
+                  duration: 400.ms,
+                  delay: (index * 50).ms,
+                  curve: Curves.easeOut,
+                ),
+          );
+        }, childCount: tournaments.length),
       ),
     );
   }
@@ -1021,13 +1131,17 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 48, color: Colors.white.withValues(alpha: 0.4)),
-            )
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 48,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+                )
                 .animate()
                 .fadeIn(duration: 600.ms, curve: Curves.easeOut)
                 .scale(
@@ -1038,14 +1152,14 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                 ),
             const SizedBox(height: 20),
             Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            )
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                )
                 .animate()
                 .fadeIn(duration: 500.ms, delay: 200.ms, curve: Curves.easeOut)
                 .slideY(begin: 0.1, end: 0, duration: 500.ms),
@@ -1054,39 +1168,48 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
               message,
               style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               textAlign: TextAlign.center,
-            )
-                .animate()
-                .fadeIn(duration: 500.ms, delay: 300.ms, curve: Curves.easeOut),
+            ).animate().fadeIn(
+              duration: 500.ms,
+              delay: 300.ms,
+              curve: Curves.easeOut,
+            ),
             if (showCreateButton) ...[
               const SizedBox(height: 24),
               AnimatedPressableButton(
-                onTap: () => context.push('/tournament/create'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.accentGold, Color(0xFFFFE082)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add, color: Color(0xFF1A3D32), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Create Tournament',
-                        style: TextStyle(
-                          color: Color(0xFF1A3D32),
-                          fontWeight: FontWeight.w600,
-                        ),
+                    onTap: () => context.push('/tournament/create'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
                       ),
-                    ],
-                  ),
-                ),
-              )
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.accentGold, Color(0xFFFFE082)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, color: Color(0xFF1A3D32), size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Create Tournament',
+                            style: TextStyle(
+                              color: Color(0xFF1A3D32),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                   .animate()
-                  .fadeIn(duration: 500.ms, delay: 400.ms, curve: Curves.easeOut)
+                  .fadeIn(
+                    duration: 500.ms,
+                    delay: 400.ms,
+                    curve: Curves.easeOut,
+                  )
                   .slideY(begin: 0.1, end: 0, duration: 500.ms),
             ],
           ],
@@ -1102,7 +1225,11 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.withValues(alpha: 0.8)),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.withValues(alpha: 0.8),
+            ),
             const SizedBox(height: 16),
             const Text(
               'Error Loading Tournaments',
@@ -1124,7 +1251,11 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
     );
   }
 
-  Widget _buildTournamentCard(BuildContext context, TournamentModel tournament, {UserModel? currentUser}) {
+  Widget _buildTournamentCard(
+    BuildContext context,
+    TournamentModel tournament, {
+    UserModel? currentUser,
+  }) {
     // Determine user's role in this tournament
     String? userRole;
     Color? roleColor;
@@ -1133,8 +1264,11 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
         userRole = 'Organizer';
         roleColor = AppTheme.primaryGreen;
       } else if (tournament.isUserParticipating(currentUser.uid)) {
-        userRole = 'Participant';
+        userRole = 'Player';
         roleColor = AppTheme.futsalBlue;
+      } else if (tournament.isUserReferee(currentUser.uid)) {
+        userRole = 'Referee';
+        roleColor = AppTheme.warningAmber;
       }
     }
 
@@ -1176,7 +1310,9 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                             gradient: LinearGradient(
                               colors: [
                                 _getSportColor(tournament.sport),
-                                _getSportColor(tournament.sport).withValues(alpha: 0.7),
+                                _getSportColor(
+                                  tournament.sport,
+                                ).withValues(alpha: 0.7),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -1211,8 +1347,9 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _getSportColor(tournament.sport)
-                                          .withValues(alpha: 0.2),
+                                      color: _getSportColor(
+                                        tournament.sport,
+                                      ).withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -1233,7 +1370,9 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: roleColor!.withValues(alpha: 0.2),
+                                        color: roleColor!.withValues(
+                                          alpha: 0.2,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
@@ -1242,7 +1381,9 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                                           Icon(
                                             userRole == 'Organizer'
                                                 ? Icons.star
-                                                : Icons.person,
+                                                : userRole == 'Player'
+                                                ? Icons.groups
+                                                : Icons.sports_outlined,
                                             color: roleColor,
                                             size: 12,
                                           ),
@@ -1259,7 +1400,8 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                                       ),
                                     ),
                                   ],
-                                  if (tournament.isRegistrationOpen && userRole == null) ...[
+                                  if (tournament.isRegistrationOpen &&
+                                      userRole == null) ...[
                                     const SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -1267,13 +1409,100 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.successGreen.withValues(alpha: 0.2),
+                                        color: AppTheme.successGreen.withValues(
+                                          alpha: 0.2,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: const Text(
                                         'Open',
                                         style: TextStyle(
                                           color: AppTheme.successGreen,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  // Closing Soon badge
+                                  if (tournament.isRegistrationOpen &&
+                                      userRole == null) ...[
+                                    Builder(
+                                      builder: (context) {
+                                        final hoursUntilDeadline =
+                                            tournament.registrationDeadline
+                                                .difference(DateTime.now())
+                                                .inHours;
+
+                                        if (hoursUntilDeadline < 24 &&
+                                            hoursUntilDeadline > 0) {
+                                          return Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.warningAmber
+                                                      .withValues(alpha: 0.2),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.schedule,
+                                                      color:
+                                                          AppTheme.warningAmber,
+                                                      size: 10,
+                                                    ),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      'Closing Soon',
+                                                      style: TextStyle(
+                                                        color:
+                                                            AppTheme
+                                                                .warningAmber,
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }
+                                        return const SizedBox.shrink();
+                                      },
+                                    ),
+                                  ],
+                                  // Full badge
+                                  if (tournament.isFull &&
+                                      userRole == null) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.errorRed.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text(
+                                        'Full',
+                                        style: TextStyle(
+                                          color: AppTheme.errorRed,
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -1376,7 +1605,8 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (tournament.entryFee != null && tournament.entryFee! > 0) ...[
+                        if (tournament.entryFee != null &&
+                            tournament.entryFee! > 0) ...[
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -1402,7 +1632,9 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.successGreen.withValues(alpha: 0.2),
+                              color: AppTheme.successGreen.withValues(
+                                alpha: 0.2,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
@@ -1431,18 +1663,30 @@ class _TournamentListScreenState extends ConsumerState<TournamentListScreen> {
     return AppTheme.getSportColorFromType(sport);
   }
 
-
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tournamentDay = DateTime(date.year, date.month, date.day);
-    
+
     if (tournamentDay == today) {
       return 'Today, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } else if (tournamentDay == today.add(const Duration(days: 1))) {
       return 'Tomorrow, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${date.day} ${months[date.month - 1]}, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     }
   }
@@ -1457,7 +1701,8 @@ class _StickyFilterHeaderDelegate extends SliverPersistentHeaderDelegate {
     required SportType? selectedSportFilter,
     required ValueChanged<SportType?> onSportFilterChanged,
     required VoidCallback onClearFilter,
-  }) buildFilterChips;
+  })
+  buildFilterChips;
 
   _StickyFilterHeaderDelegate({
     required this.selectedSportFilter,
@@ -1467,7 +1712,11 @@ class _StickyFilterHeaderDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1505,4 +1754,3 @@ class _StickyFilterHeaderDelegate extends SliverPersistentHeaderDelegate {
     return oldDelegate.selectedSportFilter != selectedSportFilter;
   }
 }
-

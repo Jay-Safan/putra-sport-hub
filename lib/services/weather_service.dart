@@ -4,7 +4,7 @@ import '../core/constants/app_constants.dart';
 
 /// Weather service for outdoor facility booking validation
 /// Integrates with OpenWeatherMap API
-/// 
+///
 /// v5.0 Logic: If Rain > 5mm AND is_indoor == false:
 ///   1. Block new bookings
 ///   2. Trigger auto-cancellation for existing bookings
@@ -12,16 +12,14 @@ import '../core/constants/app_constants.dart';
 class WeatherService {
   final String? _apiKey;
   final http.Client _client;
-  
+
   // UPM coordinates from v5.0 spec (Serdang, Selangor)
-  static const double _upmLatitude = AppConstants.upmLatitude;   // 2.999
+  static const double _upmLatitude = AppConstants.upmLatitude; // 2.999
   static const double _upmLongitude = AppConstants.upmLongitude; // 101.707
 
-  WeatherService({
-    String? apiKey,
-    http.Client? client,
-  })  : _apiKey = apiKey,
-        _client = client ?? http.Client();
+  WeatherService({String? apiKey, http.Client? client})
+    : _apiKey = apiKey,
+      _client = client ?? http.Client();
 
   /// Check if weather is suitable for outdoor activity
   /// Returns true if rain probability is below threshold
@@ -40,7 +38,7 @@ class WeatherService {
     try {
       // For current day or next few days, use forecast API
       final daysDifference = date.difference(DateTime.now()).inDays;
-      
+
       if (daysDifference > 5) {
         // OpenWeatherMap free tier only provides 5-day forecast
         return const WeatherResult(
@@ -67,13 +65,15 @@ class WeatherService {
       final targetDateStart = DateTime(date.year, date.month, date.day);
       final targetDateEnd = targetDateStart.add(const Duration(days: 1));
 
-      final relevantForecasts = forecast.where((f) {
-        final forecastDate = f['dt'] != null
-            ? DateTime.fromMillisecondsSinceEpoch(f['dt'] * 1000)
-            : DateTime.now();
-        return forecastDate.isAfter(targetDateStart) &&
-            forecastDate.isBefore(targetDateEnd);
-      }).toList();
+      final relevantForecasts =
+          forecast.where((f) {
+            final forecastDate =
+                f['dt'] != null
+                    ? DateTime.fromMillisecondsSinceEpoch(f['dt'] * 1000)
+                    : DateTime.now();
+            return forecastDate.isAfter(targetDateStart) &&
+                forecastDate.isBefore(targetDateEnd);
+          }).toList();
 
       if (relevantForecasts.isEmpty) {
         return const WeatherResult(
@@ -101,7 +101,8 @@ class WeatherService {
         }
       }
 
-      final isSuitable = maxRainProbability < AppConstants.rainProbabilityThreshold;
+      final isSuitable =
+          maxRainProbability < AppConstants.rainProbabilityThreshold;
 
       return WeatherResult(
         isSuitable: isSuitable,
@@ -109,11 +110,13 @@ class WeatherService {
         description: description ?? 'Unknown',
         temperature: temperature,
         humidity: humidity,
-        recommendation: isSuitable
-            ? null
-            : 'High rain probability (${maxRainProbability.toStringAsFixed(0)}%). Consider booking an indoor facility.',
+        recommendation:
+            isSuitable
+                ? null
+                : 'High rain probability (${maxRainProbability.toStringAsFixed(0)}%). Consider booking an indoor facility.',
       );
     } catch (e) {
+      // Non-critical: Weather data unavailable shouldn't block bookings
       return const WeatherResult(
         isSuitable: true,
         rainProbability: 0,
@@ -144,6 +147,7 @@ class WeatherService {
 
       return null;
     } catch (e) {
+      // Non-critical: Weather API failure shouldn't block operations
       return null;
     }
   }
@@ -173,7 +177,7 @@ class WeatherService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         final weatherId = data['weather']?[0]?['id'] ?? 800;
         final isRaining = weatherId >= 200 && weatherId < 700;
         final rainProbability = isRaining ? 100.0 : 0.0;
@@ -184,9 +188,10 @@ class WeatherService {
           description: data['weather']?[0]?['description'] ?? 'Unknown',
           temperature: data['main']?['temp']?.toDouble(),
           humidity: data['main']?['humidity'],
-          recommendation: isRaining
-              ? 'Currently raining. Consider an indoor facility.'
-              : null,
+          recommendation:
+              isRaining
+                  ? 'Currently raining. Consider an indoor facility.'
+                  : null,
         );
       }
 
@@ -198,6 +203,7 @@ class WeatherService {
         humidity: null,
       );
     } catch (e) {
+      // Non-critical: Weather data unavailable shouldn't block operations
       return const WeatherResult(
         isSuitable: true,
         rainProbability: 0,
@@ -235,7 +241,8 @@ class WeatherService {
         shouldBlock: true,
         shouldAutoCancel: true,
         reason: 'Heavy rain expected (${weather.rainMm.toStringAsFixed(1)}mm)',
-        suggestion: 'Booking will be auto-cancelled. Refund will be credited to your SukanPay wallet.',
+        suggestion:
+            'Booking will be auto-cancelled. Refund will be credited to your SukanPay wallet.',
         alternativeFacilityId: 'fac_futsal_kmr', // Indoor futsal as alternative
       );
     }
@@ -244,7 +251,8 @@ class WeatherService {
     if (!weather.isSuitable) {
       return OutdoorBookingCheck(
         shouldBlock: false, // Warning only, doesn't block
-        reason: 'High rain probability (${weather.rainProbability.toStringAsFixed(0)}%)',
+        reason:
+            'High rain probability (${weather.rainProbability.toStringAsFixed(0)}%)',
         suggestion: 'We recommend booking an indoor facility instead.',
         alternativeFacilityId: 'fac_futsal_kmr',
       );
@@ -310,4 +318,3 @@ class OutdoorBookingCheck {
     this.shouldAutoCancel = false,
   });
 }
-

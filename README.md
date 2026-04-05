@@ -1,39 +1,73 @@
 # PutraSportHub 🏟️
 
-**Campus Sports Ecosystem for Universiti Putra Malaysia (UPM)**
+**Campus Sports Ecosystem for Universiti Putra Malaysia (UPM)**  
+*Final Year Project (FYP) - Mobile Application Development*
 
-A comprehensive Flutter mobile application that digitizes UPM's sports facility management, gig economy for referees, tournament management, and academic merit integration.
+A comprehensive Flutter mobile application that addresses three critical problems in UPM's sports ecosystem:
+
+1. **Manual Paper-Based Booking System** → Real-time digital booking with automated confirmation
+2. **No Gig Economy for Certified Student Referees** → SukanGig marketplace with escrow payments
+3. **Fragmented Merit Point Tracking (GP08)** → Automated MyMerit system for housing eligibility
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.7+-02569B?style=flat-square&logo=flutter)
 ![Firebase](https://img.shields.io/badge/Firebase-Firestore-FFCA28?style=flat-square&logo=firebase)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?style=flat-square&logo=dart)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=flat-square)
 
 ---
 
 ## 📊 Current Status
 
-**Overall Completion:** ~95%  
+**Overall Completion:** 97% ✅  
 **Core Features:** 100% Complete ✅  
-**Status:** Ready for Demo/Beta Testing ✅
+**Research Objectives:** All Met ✅  
+**Status:** Production Ready - Demo/Thesis Defense Ready ✅  
+**Last Updated:** January 26, 2026
+
+### 🔥 Latest Updates (January 26, 2026)
+**Tournament Filter System Refinement - COMPLETE** ✅
+- ✅ Fixed Discover tab incorrectly showing empty state instead of open tournaments
+- ✅ Filter chips now remain visible even when no tournaments match filter criteria (improved UX)
+- ✅ Removed redundant referee filter from Tournament Hub (referees use dedicated SukanGig dashboard)
+- ✅ Context-aware empty state messages based on active filter (Organizing/Participating/All)
+- ✅ Improved hot restart stability by extracting nested ternary expressions into helper methods
+- ✅ Clarified role separation: Tournament Hub (organizing + participating) vs SukanGig (refereeing)
+
+**Referee System Enhancement - COMPLETE** ✅
+- ✅ Normal booking referee requests (optional referee for practice sessions)
+- ✅ Multi-referee logic with proportional payments (e.g., football: 3 referees)
+- ✅ Referee conflict prevention (time overlap detection)
+- ✅ Enhanced referee dashboard UX (Available Jobs, My Jobs, History tabs)
+- ✅ Badge system overhaul (strict 1:1 SportType↔Badge mapping)
+- ✅ Admin badge management (centralized BadgeService)
 
 ### What's Working
-- ✅ **Complete booking system** (simplified 3-step flow)
-- ✅ **Split bill functionality** for normal bookings (students only, sport-based participant limits)
+- ✅ **Complete booking system** (simplified direct payment flow)
+  - Optional referee requests for normal bookings
+  - Referee jobs visible until booking endTime
+  - Auto-cleanup with refunds/payments
 - ✅ **Unified time slot availability** (normal bookings + tournaments shown together)
 - ✅ **Tournament system fully integrated** (creation, joining, management)
 - ✅ **Tournament Hub** with smart tabs (Discover, My Active, History)
-  - Discover: Browse open tournaments
-  - My Active: Organizing/Participating with role filters
+  - Discover: Browse open tournaments (fixed to always show available tournaments)
+  - My Active: Organizing/Participating with persistent role filters (All/Organizing/Participating)
+  - Filter chips always visible for consistent UX (even when empty)
+  - Context-aware empty states ("No tournaments you're organizing" vs "No tournaments you're participating in")
   - History: Past tournaments you organized or participated in
 - ✅ **Tournament sharing** with QR codes (WhatsApp, Twitter, Email)
 - ✅ **Join tournaments** via QR code scanner or share code
 - ✅ **Split bill booking sharing** with QR codes and deep links
 - ✅ **In-app notifications** for split bill events (join, paid, confirmed, left)
-- ✅ **Referee marketplace** (SukanGig) with escrow payments
+- ✅ **Enhanced referee marketplace** (SukanGig)
+  - Multi-referee support with proportional payments
+  - Conflict prevention system
+  - 3-tab dashboard (Available/My Jobs/History)
+  - Badge system with admin management
+  - Escrow payments with auto-cleanup
 - ✅ **AI chatbot** with role-specific context
 - ✅ **Merit points system** (GP08 integration)
 - ✅ **Payment/wallet system** (SukanPay)
-- ✅ **Admin dashboard**
+- ✅ **Admin dashboard** with referee badge management
 
 ---
 
@@ -73,10 +107,31 @@ A comprehensive Flutter mobile application that digitizes UPM's sports facility 
    - Firestore transactions prevent race conditions
 
 3. **SukanGig (Referee Marketplace)**
-   - Gig economy for certified student referees
-   - Course-based certification (QKS codes)
-   - QR code venue check-in
-   - Escrow-based payment protection
+   - **Two Referee Types:**
+     - **Tournament Referees:** Mandatory for all tournament matches
+     - **Practice Referees:** Optional add-on for normal facility bookings
+   - **Multi-Referee Support:**
+     - Sports requiring multiple referees (e.g., Football: 3 referees)
+     - Partial assignment allowed (1/3, 2/3 referees)
+     - Proportional payments (only assigned referees paid)
+     - Unused referee fees auto-refunded to organizer
+   - **Conflict Prevention:**
+     - Backend time overlap detection
+     - UI warnings for conflicting jobs
+     - Accept button disabled for conflicts
+   - **Enhanced Referee Dashboard:**
+     - **Available Jobs:** Open jobs matching certifications (excludes conflicts)
+     - **My Jobs:** Accepted jobs with status tracking (Upcoming/In Progress/Recently Ended)
+     - **History:** Completed, paid, and cancelled jobs
+   - **Badge System:**
+     - 4 sports certifications: Football, Futsal, Badminton, Tennis
+     - Strict 1:1 mapping to SportType enum
+     - Admin-controlled badge management
+     - Real-time job filtering based on certifications
+   - **Job Lifecycle:**
+     - OPEN → ASSIGNED → COMPLETED → PAID (or CANCELLED)
+     - Auto-cleanup after booking endTime
+     - Escrow-based payment protection
 
 4. **MyMerit (Academic Integration)**
    - UPM Housing Merit System (GP08) integration

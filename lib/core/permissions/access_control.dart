@@ -40,18 +40,6 @@ class RoleBasedAccess extends ConsumerWidget {
     );
   }
 
-  /// Show content only for students who can use split bill
-  factory RoleBasedAccess.splitBillOnly({
-    required Widget child,
-    Widget? fallback,
-  }) {
-    return RoleBasedAccess(
-      check: RoleGuards.canUseSplitBill,
-      fallback: fallback,
-      child: child,
-    );
-  }
-
   /// Show content only for verified referees
   factory RoleBasedAccess.refereeOnly({
     required Widget child,
@@ -65,10 +53,7 @@ class RoleBasedAccess extends ConsumerWidget {
   }
 
   /// Show content only for admins
-  factory RoleBasedAccess.adminOnly({
-    required Widget child,
-    Widget? fallback,
-  }) {
+  factory RoleBasedAccess.adminOnly({required Widget child, Widget? fallback}) {
     return RoleBasedAccess(
       check: RoleGuards.canAccessAdmin,
       fallback: fallback,

@@ -20,11 +20,6 @@ class BookingModel {
   final double totalAmount;
   final BookingStatus status;
   final String? refereeJobId;
-  final List<SplitBillParticipant> splitBillParticipants;
-  final bool isSplitBill;
-  final String? teamCode; // For split bill team join code (e.g., "TIGER-882")
-  final DateTime?
-  splitBillPaymentDeadline; // Payment deadline for split bill participants (e.g., 24h before startTime)
   final BookingType? bookingType; // 'PRACTICE' or 'MATCH'
   final TournamentFormat? tournamentFormat; // Tournament format if Match
   final int? tournamentTeams; // Number of teams in tournament
@@ -55,10 +50,6 @@ class BookingModel {
     required this.totalAmount,
     required this.status,
     this.refereeJobId,
-    this.splitBillParticipants = const [],
-    this.isSplitBill = false,
-    this.teamCode,
-    this.splitBillPaymentDeadline,
     this.bookingType,
     this.tournamentFormat,
     this.tournamentTeams,
@@ -92,66 +83,6 @@ class BookingModel {
   /// Check if booking is eligible for refund
   bool get isRefundEligible => canCancel;
 
-  /// Get split bill status
-  SplitBillStatus get splitBillStatus {
-    if (!isSplitBill) return SplitBillStatus.notApplicable;
-
-    final paidCount = splitBillParticipants.where((p) => p.hasPaid).length;
-    final totalCount = splitBillParticipants.length;
-
-    if (paidCount == 0) return SplitBillStatus.pending;
-    if (paidCount < totalCount) return SplitBillStatus.partial;
-    return SplitBillStatus.complete;
-  }
-
-  /// Get paid amount for split bill
-  double get splitBillPaidAmount {
-    return splitBillParticipants
-        .where((p) => p.hasPaid)
-        .fold(0.0, (total, p) => total + p.amount);
-  }
-
-  /// Check if a specific user (by email) is the organizer of this booking
-  bool isOrganizer(String userEmail) {
-    return userEmail.toLowerCase() == this.userEmail.toLowerCase();
-  }
-
-  /// Check if a specific user (by email) is a participant in this split bill booking
-  bool isParticipant(String userEmail) {
-    if (!isSplitBill) return false;
-    return splitBillParticipants.any(
-      (p) => p.email.toLowerCase() == userEmail.toLowerCase(),
-    );
-  }
-
-  /// Get user's role in this booking (organizer, participant, or none)
-  BookingUserRole getUserRole(String userEmail) {
-    if (isOrganizer(userEmail)) {
-      return BookingUserRole.organizer;
-    } else if (isParticipant(userEmail)) {
-      return BookingUserRole.participant;
-    } else {
-      return BookingUserRole.none;
-    }
-  }
-
-  /// Get remaining amount for split bill
-  double get splitBillRemainingAmount {
-    return totalAmount - splitBillPaidAmount;
-  }
-
-  /// Check if payment deadline has passed (for split bill bookings)
-  bool get isPaymentDeadlinePassed {
-    if (!isSplitBill || splitBillPaymentDeadline == null) return false;
-    return DateTime.now().isAfter(splitBillPaymentDeadline!);
-  }
-
-  /// Check if all participants have paid (for split bill bookings)
-  bool get areAllParticipantsPaid {
-    if (!isSplitBill || splitBillParticipants.isEmpty) return true;
-    return splitBillParticipants.every((p) => p.hasPaid);
-  }
-
   /// Factory constructor from Firestore
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -173,16 +104,6 @@ class BookingModel {
       totalAmount: (data['totalAmount'] ?? 0).toDouble(),
       status: BookingStatus.fromCode(data['status'] ?? 'PENDING_PAYMENT'),
       refereeJobId: data['refereeJobId'],
-      splitBillParticipants:
-          (data['splitBillParticipants'] as List? ?? [])
-              .map((p) => SplitBillParticipant.fromMap(p))
-              .toList(),
-      isSplitBill: data['isSplitBill'] ?? false,
-      teamCode: data['teamCode'] ?? data['team_code'],
-      splitBillPaymentDeadline:
-          data['splitBillPaymentDeadline'] != null
-              ? (data['splitBillPaymentDeadline'] as Timestamp).toDate()
-              : null,
       bookingType:
           data['bookingType'] != null
               ? BookingType.fromCode(data['bookingType'])
@@ -222,15 +143,6 @@ class BookingModel {
       'totalAmount': totalAmount,
       'status': status.code,
       'refereeJobId': refereeJobId,
-      'splitBillParticipants':
-          splitBillParticipants.map((p) => p.toMap()).toList(),
-      'isSplitBill': isSplitBill,
-      'teamCode': teamCode,
-      'team_code': teamCode, // Legacy field name support
-      'splitBillPaymentDeadline':
-          splitBillPaymentDeadline != null
-              ? Timestamp.fromDate(splitBillPaymentDeadline!)
-              : null,
       'bookingType': bookingType?.code,
       'tournamentFormat': tournamentFormat?.code,
       'tournamentTeams': tournamentTeams,
@@ -264,9 +176,6 @@ class BookingModel {
     double? totalAmount,
     BookingStatus? status,
     String? refereeJobId,
-    List<SplitBillParticipant>? splitBillParticipants,
-    bool? isSplitBill,
-    String? teamCode,
     BookingType? bookingType,
     TournamentFormat? tournamentFormat,
     int? tournamentTeams,
@@ -295,12 +204,6 @@ class BookingModel {
       totalAmount: totalAmount ?? this.totalAmount,
       status: status ?? this.status,
       refereeJobId: refereeJobId ?? this.refereeJobId,
-      splitBillParticipants:
-          splitBillParticipants ?? this.splitBillParticipants,
-      isSplitBill: isSplitBill ?? this.isSplitBill,
-      teamCode: teamCode ?? this.teamCode,
-      splitBillPaymentDeadline:
-          splitBillPaymentDeadline ?? splitBillPaymentDeadline,
       bookingType: bookingType ?? this.bookingType,
       tournamentFormat: tournamentFormat ?? this.tournamentFormat,
       tournamentTeams: tournamentTeams ?? this.tournamentTeams,
@@ -319,67 +222,4 @@ class BookingModel {
   String toString() {
     return 'BookingModel(id: $id, facility: $facilityName, status: ${status.displayName})';
   }
-}
-
-/// Split bill participant model
-class SplitBillParticipant {
-  final String oderId;
-  final String email;
-  final String name;
-  final double amount;
-  final bool hasPaid;
-  final DateTime? paidAt;
-
-  const SplitBillParticipant({
-    required this.oderId,
-    required this.email,
-    required this.name,
-    required this.amount,
-    this.hasPaid = false,
-    this.paidAt,
-  });
-
-  factory SplitBillParticipant.fromMap(Map<String, dynamic> map) {
-    return SplitBillParticipant(
-      oderId: map['oderId'] ?? '',
-      email: map['email'] ?? '',
-      name: map['name'] ?? '',
-      amount: (map['amount'] ?? 0).toDouble(),
-      hasPaid: map['hasPaid'] ?? false,
-      paidAt:
-          map['paidAt'] != null ? (map['paidAt'] as Timestamp).toDate() : null,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'oderId': oderId,
-      'email': email,
-      'name': name,
-      'amount': amount,
-      'hasPaid': hasPaid,
-      'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
-    };
-  }
-
-  SplitBillParticipant copyWith({bool? hasPaid, DateTime? paidAt}) {
-    return SplitBillParticipant(
-      oderId: oderId,
-      email: email,
-      name: name,
-      amount: amount,
-      hasPaid: hasPaid ?? this.hasPaid,
-      paidAt: paidAt ?? this.paidAt,
-    );
-  }
-}
-
-/// Split bill status enum
-enum SplitBillStatus { notApplicable, pending, partial, complete }
-
-/// User role in a booking
-enum BookingUserRole {
-  organizer, // User created the booking
-  participant, // User joined via split bill
-  none, // User has no relation to the booking
 }

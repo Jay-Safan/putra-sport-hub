@@ -39,7 +39,8 @@ class NotificationModel {
       isRead: data['isRead'] ?? false,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       relatedId: data['relatedId'],
-      data: data['data'] != null ? Map<String, dynamic>.from(data['data']) : null,
+      data:
+          data['data'] != null ? Map<String, dynamic>.from(data['data']) : null,
       route: data['route'],
     );
   }
@@ -108,10 +109,6 @@ class NotificationModel {
         return '🚫';
       case NotificationType.refereePaymentReleased:
         return '💵';
-      case NotificationType.splitBillRequest:
-        return '👥';
-      case NotificationType.splitBillPaid:
-        return '✅';
       case NotificationType.tournamentCreated:
         return '🏅';
       case NotificationType.tournamentRegistrationOpen:
@@ -126,4 +123,3 @@ class NotificationModel {
     }
   }
 }
-

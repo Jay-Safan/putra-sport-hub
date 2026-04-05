@@ -12,7 +12,7 @@ class FacilityModel {
   final double pricePublic;
   final int refereeRequired;
   final List<String> subUnits; // For INVENTORY type (e.g., Court 1, Court 2)
-  final String? imageUrl;
+  final String? imageAssetPath;
   final bool isIndoor;
   final bool isActive;
   final Map<String, dynamic>? amenities;
@@ -28,7 +28,7 @@ class FacilityModel {
     required this.pricePublic,
     required this.refereeRequired,
     this.subUnits = const [],
-    this.imageUrl,
+    this.imageAssetPath,
     this.isIndoor = false,
     this.isActive = true,
     this.amenities,
@@ -51,7 +51,7 @@ class FacilityModel {
   bool get requiresWeatherCheck => !isIndoor;
 
   /// Check if facility has multiple bookable units
-  bool get hasSubUnits => type == FacilityType.inventory && subUnits.isNotEmpty;
+  bool get hasSubUnits => subUnits.isNotEmpty;
 
   /// Get total bookable units count
   int get totalUnits => hasSubUnits ? subUnits.length : 1;
@@ -79,7 +79,7 @@ class FacilityModel {
       pricePublic: (data['price_public'] ?? 0).toDouble(),
       refereeRequired: data['referee_required'] ?? 0,
       subUnits: List<String>.from(data['sub_units'] ?? []),
-      imageUrl: data['imageUrl'],
+      imageAssetPath: data['imageUrl'],
       isIndoor: data['isIndoor'] ?? false,
       isActive: data['isActive'] ?? true,
       amenities: data['amenities'],
@@ -98,7 +98,7 @@ class FacilityModel {
       'price_public': pricePublic,
       'referee_required': refereeRequired,
       'sub_units': subUnits,
-      'imageUrl': imageUrl,
+      'imageUrl': imageAssetPath,
       'isIndoor': isIndoor,
       'isActive': isActive,
       'amenities': amenities,
@@ -127,6 +127,7 @@ class FacilityModel {
       pricePublic: (json['price_public'] ?? 0).toDouble(),
       refereeRequired: json['referee_required'] ?? 0,
       subUnits: List<String>.from(json['sub_units'] ?? []),
+      imageAssetPath: json['imageAssetPath'],
       isIndoor: json['isIndoor'] ?? json['name'].toString().contains('Indoor'),
       isActive: true,
       location: location,
@@ -142,7 +143,7 @@ class FacilityModel {
     double? pricePublic,
     int? refereeRequired,
     List<String>? subUnits,
-    String? imageUrl,
+    String? imageAssetPath,
     bool? isIndoor,
     bool? isActive,
     Map<String, dynamic>? amenities,
@@ -158,7 +159,7 @@ class FacilityModel {
       pricePublic: pricePublic ?? this.pricePublic,
       refereeRequired: refereeRequired ?? this.refereeRequired,
       subUnits: subUnits ?? this.subUnits,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageAssetPath: imageAssetPath ?? this.imageAssetPath,
       isIndoor: isIndoor ?? this.isIndoor,
       isActive: isActive ?? this.isActive,
       amenities: amenities ?? this.amenities,
@@ -174,11 +175,11 @@ class FacilityModel {
 
 /// Seed data for facilities collection
 /// Location coordinates are based on UPM campus (Serdang, Selangor)
-/// 
+///
 /// Pricing Model:
 /// - Students: Small booking fees (RM 3-10) - facility access free per UPM policy
 /// - Public: Full rental rates (RM 20-600)
-/// 
+///
 /// Booking Types:
 /// - SESSION: 2-hour fixed duration (Football, Futsal)
 /// - INVENTORY: Hourly with multiple units (Badminton, Tennis)
@@ -190,135 +191,124 @@ const List<Map<String, dynamic>> facilitiesSeedData = [
     'id': 'fac_football_stadium',
     'name': 'Stadium UPM',
     'description':
-        'Main stadium at UPM Sports Complex. Used for official varsity matches and tournaments. Full-size grass pitch with spectator seating and floodlights.',
+        'Premier stadium at UPM Sports Complex. FIFA-standard natural grass pitch with athletics track. Features spectator stands, modern floodlighting, and is used for varsity matches and major tournaments.',
     'type': 'SESSION',
     'sport': 'FOOTBALL',
-    'price_student': 10,  // Booking fee
-    'price_public': 600,  // Premium rate
+    'price_student': 10, // Booking fee
+    'price_public': 600, // Premium rate
     'referee_required': 3,
     'isIndoor': false,
-    'location': {'latitude': 2.986372108422893, 'longitude': 101.72579628891536},
+    'imageAssetPath': 'assets/images/facilities/football/stadium_upm.jpg',
+    'location': {
+      'latitude': 2.986372108422893,
+      'longitude': 101.72579628891536,
+    },
   },
   {
     'id': 'fac_football_padang_a',
     'name': 'Padang A (Near KMR)',
     'description':
-        'Full-sized football field near Kolej Mohamad Rashid. Natural grass surface with floodlights. Suitable for 11-a-side matches and training.',
+        'Full-sized football field located near Kolej Mohamad Rashid residential area. Well-maintained natural grass surface with modern floodlighting system. Popular venue for inter-college matches and student training sessions.',
     'type': 'SESSION',
     'sport': 'FOOTBALL',
-    'price_student': 10,  // Booking fee
+    'price_student': 10, // Booking fee
     'price_public': 250,
     'referee_required': 3,
     'isIndoor': false,
-    'location': {'latitude': 2.997660204655413, 'longitude': 101.70600927089941},
+    'imageAssetPath': 'assets/images/facilities/football/padang_a.jpg',
+    'location': {
+      'latitude': 2.997660204655413,
+      'longitude': 101.70600927089941,
+    },
   },
   {
     'id': 'fac_football_padang_b',
     'name': 'Padang B (Near KMR)',
     'description':
-        'Football field near Kolej Mohamad Rashid area. Natural grass surface with floodlights for evening games.',
+        'Secondary football field in the KMR vicinity with natural grass surface. Features adequate floodlighting for evening training sessions and recreational matches.',
     'type': 'SESSION',
     'sport': 'FOOTBALL',
     'price_student': 10,
     'price_public': 250,
     'referee_required': 3,
     'isIndoor': false,
-    'location': {'latitude': 2.9960699996249094, 'longitude': 101.7069976276016},
+    'imageAssetPath': 'assets/images/facilities/football/padang_b.jpeg',
+    'location': {
+      'latitude': 2.9960699996249094,
+      'longitude': 101.7069976276016,
+    },
   },
   {
     'id': 'fac_football_padang_c',
     'name': 'Padang C (Near KMR)',
     'description':
-        'Football field near Kolej Mohamad Rashid area. Natural grass surface with floodlights for evening games.',
+        'Football field in the KMR area with natural grass surface. Equipped with modern floodlighting for evening matches. Regularly used for student recreational activities and sports club training.',
     'type': 'SESSION',
     'sport': 'FOOTBALL',
     'price_student': 10,
     'price_public': 250,
     'referee_required': 3,
     'isIndoor': false,
-    'location': {'latitude': 2.995181678690454, 'longitude': 101.70770111887524},
+    'imageAssetPath': 'assets/images/facilities/football/padang_c.jpeg',
+    'location': {
+      'latitude': 2.995181678690454,
+      'longitude': 101.70770111887524,
+    },
   },
   {
     'id': 'fac_football_padang_d',
     'name': 'Padang D (Kolej Serumpun)',
     'description':
-        'Football field at Kolej Serumpun residential area. Natural grass surface suitable for training and matches.',
+        'Football field located at Kolej Serumpun residential area. Natural grass pitch with good drainage system. Conveniently accessible for students living in the nearby residential colleges.',
     'type': 'SESSION',
     'sport': 'FOOTBALL',
     'price_student': 10,
     'price_public': 250,
     'referee_required': 3,
     'isIndoor': false,
-    'location': {'latitude': 2.9918733483331974, 'longitude': 101.71658472158012},
+    'imageAssetPath': 'assets/images/facilities/football/padang_d.jpg',
+    'location': {
+      'latitude': 2.9918733483331974,
+      'longitude': 101.71658472158012,
+    },
   },
   {
     'id': 'fac_football_padang_e',
     'name': 'Padang E (Kolej 10)',
     'description':
-        'Football field at Kolej 10 area. Natural grass surface with floodlights for evening games.',
+        'Football field at Kolej 10 area featuring natural grass surface with professional floodlighting. Well-maintained pitch suitable for competitive matches and recreational play.',
     'type': 'SESSION',
     'sport': 'FOOTBALL',
     'price_student': 10,
     'price_public': 250,
     'referee_required': 3,
     'isIndoor': false,
-    'location': {'latitude': 3.0078650418969475, 'longitude': 101.71792061303512},
+    'imageAssetPath': 'assets/images/facilities/football/padang_e.jpg',
+    'location': {
+      'latitude': 3.0078650418969475,
+      'longitude': 101.71792061303512,
+    },
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // FUTSAL FACILITIES (SESSION - 2 hours)
+  // FUTSAL FACILITY (SESSION - 2 hours, single court)
   // ═══════════════════════════════════════════════════════════════════════════
   {
-    'id': 'fac_futsal_complex_a',
-    'name': 'Gelanggang Futsal A',
+    'id': 'fac_futsal_kmr',
+    'name': 'KMR Futsal Court',
     'description':
-        'Indoor futsal court at UPM Sports Complex. Synthetic flooring with proper lighting.',
+        'Outdoor futsal court near Kolej Mohamad Rashid. Concrete surface with floodlights for evening sessions. Popular for inter-college tournaments.',
     'type': 'SESSION',
     'sport': 'FUTSAL',
-    'price_student': 5,  // Booking fee
-    'price_public': 100,
+    'price_student': 5, // Booking fee per 2-hour session
+    'price_public': 100, // Official UPM rate per 2-hour session
     'referee_required': 1,
-    'isIndoor': true,
-    'location': {'latitude': 2.9868095178480107, 'longitude': 101.7245986302808},
-  },
-  {
-    'id': 'fac_futsal_complex_b',
-    'name': 'Gelanggang Futsal B',
-    'description':
-        'Indoor futsal court at UPM Sports Complex. Synthetic flooring with proper lighting.',
-    'type': 'SESSION',
-    'sport': 'FUTSAL',
-    'price_student': 5,
-    'price_public': 100,
-    'referee_required': 1,
-    'isIndoor': true,
-    'location': {'latitude': 2.9868095178480107, 'longitude': 101.7245986302808},
-  },
-  {
-    'id': 'fac_futsal_complex_c',
-    'name': 'Gelanggang Futsal C',
-    'description':
-        'Indoor futsal court at UPM Sports Complex. Synthetic flooring with proper lighting.',
-    'type': 'SESSION',
-    'sport': 'FUTSAL',
-    'price_student': 5,
-    'price_public': 100,
-    'referee_required': 1,
-    'isIndoor': true,
-    'location': {'latitude': 2.9868095178480107, 'longitude': 101.7245986302808},
-  },
-  {
-    'id': 'fac_futsal_complex_d',
-    'name': 'Gelanggang Futsal D',
-    'description':
-        'Indoor futsal court at UPM Sports Complex. Synthetic flooring with proper lighting.',
-    'type': 'SESSION',
-    'sport': 'FUTSAL',
-    'price_student': 5,
-    'price_public': 100,
-    'referee_required': 1,
-    'isIndoor': true,
-    'location': {'latitude': 2.9868095178480107, 'longitude': 101.7245986302808},
+    'isIndoor': false,
+    'imageAssetPath': 'assets/images/facilities/futsal/kmr_futsal.jpg',
+    'location': {
+      'latitude': 2.9868095178480107,
+      'longitude': 101.7245986302808,
+    },
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -328,18 +318,28 @@ const List<Map<String, dynamic>> facilitiesSeedData = [
     'id': 'fac_badminton_main',
     'name': 'Dewan Serbaguna',
     'description':
-        'Multi-purpose hall with 8 badminton courts. Wooden flooring with standard lighting.',
+        'Multi-purpose sports hall at UPM Sports Complex with 8 professional badminton courts. Features wooden flooring, proper ventilation, and BWF-standard lighting. Air-conditioned facility suitable for tournaments and training.',
     'type': 'INVENTORY',
     'sport': 'BADMINTON',
     'sub_units': [
-      'Court 1', 'Court 2', 'Court 3', 'Court 4',
-      'Court 5', 'Court 6', 'Court 7', 'Court 8'
+      'Court 1',
+      'Court 2',
+      'Court 3',
+      'Court 4',
+      'Court 5',
+      'Court 6',
+      'Court 7',
+      'Court 8',
     ],
-    'price_student': 3,  // Booking fee per hour
+    'price_student': 3, // Booking fee per hour
     'price_public': 20,
     'referee_required': 0,
     'isIndoor': true,
-    'location': {'latitude': 2.9868095178480107, 'longitude': 101.7245986302808},
+    'imageAssetPath': 'assets/images/facilities/badminton/badminton.jpg',
+    'location': {
+      'latitude': 2.9868095178480107,
+      'longitude': 101.7245986302808,
+    },
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -350,18 +350,33 @@ const List<Map<String, dynamic>> facilitiesSeedData = [
     'id': 'fac_tennis_main',
     'name': 'Gelanggang Tenis UPM',
     'description':
-        '14 outdoor hard courts at UPM Tennis Complex. Suitable for training and matches. Maximum 2 hours per booking.',
+        'UPM Tennis Complex featuring 14 outdoor hard courts with acrylic surface. ITF-standard courts with professional lighting for evening play. Located near the main sports complex with parking facilities.',
     'type': 'INVENTORY',
     'sport': 'TENNIS',
     'sub_units': [
-      'Court 1', 'Court 2', 'Court 3', 'Court 4', 'Court 5', 'Court 6', 'Court 7',
-      'Court 8', 'Court 9', 'Court 10', 'Court 11', 'Court 12', 'Court 13', 'Court 14'
+      'Court 1',
+      'Court 2',
+      'Court 3',
+      'Court 4',
+      'Court 5',
+      'Court 6',
+      'Court 7',
+      'Court 8',
+      'Court 9',
+      'Court 10',
+      'Court 11',
+      'Court 12',
+      'Court 13',
+      'Court 14',
     ],
-    'price_student': 5,  // Booking fee per hour
-    'price_public': 20,  // Official UPM rate: RM20/hour
+    'price_student': 5, // Booking fee per hour
+    'price_public': 20, // Official UPM rate: RM20/hour
     'referee_required': 0,
     'isIndoor': false,
-    'location': {'latitude': 2.9974331685643287, 'longitude': 101.7043194912751},
+    'imageAssetPath': 'assets/images/facilities/tennis/tennis.webp',
+    'location': {
+      'latitude': 2.9974331685643287,
+      'longitude': 101.7043194912751,
+    },
   },
 ];
-

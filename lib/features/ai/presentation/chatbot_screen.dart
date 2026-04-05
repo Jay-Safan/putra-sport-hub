@@ -24,33 +24,50 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
   final FocusNode _focusNode = FocusNode();
   // Removed: final List<ChatMessage> _messages = []; - now using provider
   final Uuid _uuid = const Uuid();
-  
+
   bool _isLoading = false;
   bool _showQuickActions = true;
   BookingIntent? _currentBookingIntent;
   String? _suggestedFacilityId;
   late ChatbotService _chatbotService;
-  
+
   // Typing indicator animation
   late AnimationController _typingController;
 
   @override
   void initState() {
     super.initState();
-    _chatbotService = ChatbotService(apiKey: ApiKeys.gemini);
+
+    // Initialize chatbot service with safe API key access
+    try {
+      final geminiKey = ApiKeys.gemini;
+      _chatbotService = ChatbotService(
+        apiKey: geminiKey.isEmpty ? null : geminiKey,
+      );
+    } catch (e) {
+      // If dotenv not loaded (web), create service without API key (uses fallback)
+      _chatbotService = ChatbotService(apiKey: null);
+    }
+
     _typingController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
-    
+
     // Only add welcome message if history is empty (first time opening)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final messages = ref.read(chatHistoryProvider);
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final messages = ref
+          .read(chatHistoryProvider.notifier)
+          .getMessagesForUser(user?.uid);
+
       if (messages.isEmpty) {
         _addWelcomeMessage();
       } else {
         // History exists - check if welcome message is already there
-        final hasWelcome = ref.read(chatHistoryProvider.notifier).hasWelcomeMessage();
+        final hasWelcome = ref
+            .read(chatHistoryProvider.notifier)
+            .hasWelcomeMessage(user?.uid);
         if (!hasWelcome) {
           _addWelcomeMessage();
         }
@@ -74,15 +91,16 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
   void _addWelcomeMessage() {
     final user = ref.read(currentUserProvider).valueOrNull;
     final welcomeMessage = _chatbotService.getWelcomeMessage(user);
-    
+
     final welcomeMsg = ChatMessage(
       id: _uuid.v4(),
       content: welcomeMessage,
       isUser: false,
       timestamp: DateTime.now(),
       type: MessageType.welcome,
+      userId: user?.uid,
     );
-    
+
     ref.read(chatHistoryProvider.notifier).addMessage(welcomeMsg);
   }
 
@@ -94,11 +112,14 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
       _showQuickActions = false;
     });
 
+    final user = ref.read(currentUserProvider).valueOrNull;
+
     final userMessage = ChatMessage(
       id: _uuid.v4(),
       content: messageText,
       isUser: true,
       timestamp: DateTime.now(),
+      userId: user?.uid,
     );
 
     // Add to provider instead of local state
@@ -110,9 +131,13 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
 
     _scrollToBottom();
 
-    final user = ref.read(currentUserProvider).valueOrNull;
-    final messages = ref.read(chatHistoryProvider);
-    final bookingIntent = _chatbotService.parseBookingIntent(messageText, messages);
+    final messages = ref
+        .read(chatHistoryProvider.notifier)
+        .getMessagesForUser(user?.uid);
+    final bookingIntent = _chatbotService.parseBookingIntent(
+      messageText,
+      messages,
+    );
 
     if (bookingIntent != null) {
       await _handleBookingIntent(bookingIntent, user);
@@ -120,7 +145,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
     }
 
     try {
-      final conversationHistory = ref.read(chatHistoryProvider.notifier).getConversationHistory();
+      final conversationHistory = ref
+          .read(chatHistoryProvider.notifier)
+          .getConversationHistory(user?.uid);
       final response = await _chatbotService.getResponse(
         userMessage: messageText,
         conversationHistory: conversationHistory,
@@ -128,14 +155,17 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
       );
 
       if (mounted) {
-        ref.read(chatHistoryProvider.notifier).addMessage(
-          ChatMessage(
-            id: _uuid.v4(),
-            content: response,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
+        ref
+            .read(chatHistoryProvider.notifier)
+            .addMessage(
+              ChatMessage(
+                id: _uuid.v4(),
+                content: response,
+                isUser: false,
+                timestamp: DateTime.now(),
+                userId: user?.uid,
+              ),
+            );
         setState(() {
           _isLoading = false;
         });
@@ -143,14 +173,17 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
       }
     } catch (e) {
       if (mounted) {
-        ref.read(chatHistoryProvider.notifier).addMessage(
-          ChatMessage(
-            id: _uuid.v4(),
-            content: 'Oops! Something went wrong. Please try again.',
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
+        ref
+            .read(chatHistoryProvider.notifier)
+            .addMessage(
+              ChatMessage(
+                id: _uuid.v4(),
+                content: 'Oops! Something went wrong. Please try again.',
+                isUser: false,
+                timestamp: DateTime.now(),
+                userId: user?.uid,
+              ),
+            );
         setState(() {
           _isLoading = false;
         });
@@ -159,57 +192,76 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
     }
   }
 
-  Future<void> _handleBookingIntent(BookingIntent intent, UserModel? user) async {
+  Future<void> _handleBookingIntent(
+    BookingIntent intent,
+    UserModel? user,
+  ) async {
     setState(() {
       _currentBookingIntent = intent;
     });
 
     if (intent.sport != null) {
       try {
-        final facilities = await ref.read(facilitiesBySportProvider(intent.sport!).future);
-        
+        final facilities = await ref.read(
+          facilitiesBySportProvider(intent.sport!).future,
+        );
+
         if (facilities.isNotEmpty) {
           _suggestedFacilityId = facilities.first.id;
-          final response = _chatbotService.getBookingAssistantResponse(intent, facilities, user);
+          final response = _chatbotService.getBookingAssistantResponse(
+            intent,
+            facilities,
+            user,
+          );
 
           if (mounted) {
-            ref.read(chatHistoryProvider.notifier).addMessage(
-              ChatMessage(
-                id: _uuid.v4(),
-                content: response,
-                isUser: false,
-                timestamp: DateTime.now(),
-                type: MessageType.booking,
-              ),
-            );
+            ref
+                .read(chatHistoryProvider.notifier)
+                .addMessage(
+                  ChatMessage(
+                    id: _uuid.v4(),
+                    content: response,
+                    isUser: false,
+                    timestamp: DateTime.now(),
+                    type: MessageType.booking,
+                  ),
+                );
             setState(() {
               _isLoading = false;
             });
             _scrollToBottom();
           }
         } else {
-          _addBotMessage('No facilities found for ${intent.sport!.displayName}. Try browsing from Home!');
+          _addBotMessage(
+            'No facilities found for ${intent.sport!.displayName}. Try browsing from Home!',
+          );
         }
       } catch (e) {
         _addBotMessage('Error finding facilities. Please try again.');
       }
     } else {
-      final response = _chatbotService.getBookingAssistantResponse(intent, null, user);
+      final response = _chatbotService.getBookingAssistantResponse(
+        intent,
+        null,
+        user,
+      );
       _addBotMessage(response);
     }
   }
 
   void _addBotMessage(String content, {MessageType type = MessageType.text}) {
     if (mounted) {
-      ref.read(chatHistoryProvider.notifier).addMessage(
-        ChatMessage(
-          id: _uuid.v4(),
-          content: content,
-          isUser: false,
-          timestamp: DateTime.now(),
-          type: type,
-        ),
-      );
+      ref
+          .read(chatHistoryProvider.notifier)
+          .addMessage(
+            ChatMessage(
+              id: _uuid.v4(),
+              content: content,
+              isUser: false,
+              timestamp: DateTime.now(),
+              type: type,
+            ),
+          );
       setState(() {
         _isLoading = false;
       });
@@ -250,8 +302,8 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider).valueOrNull;
-    // Watch provider instead of local state
-    final messages = ref.watch(chatHistoryProvider);
+    // Watch provider for current user's messages
+    final messages = ref.watch(currentUserMessagesProvider);
     final quickActions = _chatbotService.getQuickActions('', user: user);
 
     return Scaffold(
@@ -262,11 +314,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0D2920),
-              Color(0xFF0A1F1A),
-              Color(0xFF081915),
-            ],
+            colors: [Color(0xFF0D2920), Color(0xFF0A1F1A), Color(0xFF081915)],
           ),
         ),
         child: SafeArea(
@@ -275,16 +323,20 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
             children: [
               // Header
               _buildHeader(),
-              
+
               // Messages
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  itemCount: messages.length + (_isLoading ? 1 : 0) + (_showQuickActions ? 1 : 0),
+                  itemCount:
+                      messages.length +
+                      (_isLoading ? 1 : 0) +
+                      (_showQuickActions ? 1 : 0),
                   itemBuilder: (context, index) {
                     // Quick actions at the end
-                    if (_showQuickActions && index == messages.length + (_isLoading ? 1 : 0)) {
+                    if (_showQuickActions &&
+                        index == messages.length + (_isLoading ? 1 : 0)) {
                       return _buildQuickActions(quickActions);
                     }
                     // Loading indicator
@@ -295,7 +347,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
                   },
                 ),
               ),
-              
+
               // Input area
               _buildInputArea(),
             ],
@@ -340,9 +392,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
               ),
             ),
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Bot avatar with status
           Stack(
             children: [
@@ -384,9 +436,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Title
           Expanded(
             child: Column(
@@ -412,7 +464,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
               ],
             ),
           ),
-          
+
           // Menu button
           IconButton(
             onPressed: () {
@@ -450,30 +502,34 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: actions.map((action) {
-              return GestureDetector(
-                onTap: () => _sendMessage(action),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      width: 1,
+            children:
+                actions.map((action) {
+                  return GestureDetector(
+                    onTap: () => _sendMessage(action),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        action,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    action,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
           ),
         ],
       ),
@@ -481,18 +537,22 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
   }
 
   Widget _buildMessageBubble(ChatMessage message, int index) {
-    final messages = ref.read(chatHistoryProvider);
+    final messages = ref.read(currentUserMessagesProvider);
     final isUser = message.isUser;
-    final showTimestamp = index == messages.length - 1 ||
-        (index < messages.length - 1 && messages[index + 1].isUser != message.isUser);
+    final showTimestamp =
+        index == messages.length - 1 ||
+        (index < messages.length - 1 &&
+            messages[index + 1].isUser != message.isUser);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment:
+                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // Bot avatar
@@ -517,25 +577,29 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
                   ),
                 ),
               ],
-              
+
               // Message bubble
               Flexible(
                 child: Container(
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.75,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    gradient: isUser
-                        ? const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              AppTheme.primaryGreen,
-                              Color(0xFF1B5E4A),
-                            ],
-                          )
-                        : null,
+                    gradient:
+                        isUser
+                            ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppTheme.primaryGreen,
+                                Color(0xFF1B5E4A),
+                              ],
+                            )
+                            : null,
                     color: isUser ? null : Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(18),
@@ -543,21 +607,24 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
                       bottomLeft: Radius.circular(isUser ? 18 : 4),
                       bottomRight: Radius.circular(isUser ? 4 : 18),
                     ),
-                    border: isUser
-                        ? null
-                        : Border.all(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            width: 1,
-                          ),
+                    border:
+                        isUser
+                            ? null
+                            : Border.all(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              width: 1,
+                            ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Message text with markdown-like formatting
                       _buildFormattedText(message.content, isUser),
-                      
+
                       // Booking action button
-                      if (!isUser && message.type == MessageType.booking && _suggestedFacilityId != null)
+                      if (!isUser &&
+                          message.type == MessageType.booking &&
+                          _suggestedFacilityId != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
                           child: SizedBox(
@@ -568,7 +635,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
                                 backgroundColor: Colors.white,
                                 foregroundColor: AppTheme.primaryGreen,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -594,7 +663,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
                   ),
                 ),
               ),
-              
+
               // User avatar
               if (isUser) ...[
                 Container(
@@ -614,7 +683,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
               ],
             ],
           ),
-          
+
           // Timestamp
           if (showTimestamp)
             Padding(
@@ -640,59 +709,72 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
   Widget _buildFormattedText(String text, bool isUser) {
     // Simple markdown-like formatting
     final lines = text.split('\n');
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: lines.map((line) {
-        // Headers (##)
-        if (line.startsWith('## ')) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              line.substring(3),
-              style: TextStyle(
-                color: isUser ? Colors.white : Colors.white.withValues(alpha: 0.95),
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
-            ),
-          );
-        }
-        
-        // Bold (**text**)
-        if (line.contains('**')) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: _buildBoldText(line, isUser),
-          );
-        }
-        
-        // Bullet points
-        if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('✅ ') || line.startsWith('❌ ')) {
-          return Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 2),
-            child: Text(
+      children:
+          lines.map((line) {
+            // Headers (##)
+            if (line.startsWith('## ')) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  line.substring(3),
+                  style: TextStyle(
+                    color:
+                        isUser
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.95),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              );
+            }
+
+            // Bold (**text**)
+            if (line.contains('**')) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: _buildBoldText(line, isUser),
+              );
+            }
+
+            // Bullet points
+            if (line.startsWith('• ') ||
+                line.startsWith('- ') ||
+                line.startsWith('✅ ') ||
+                line.startsWith('❌ ')) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 2),
+                child: Text(
+                  line,
+                  style: TextStyle(
+                    color:
+                        isUser
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.85),
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              );
+            }
+
+            // Regular text
+            return Text(
               line,
               style: TextStyle(
-                color: isUser ? Colors.white : Colors.white.withValues(alpha: 0.85),
+                color:
+                    isUser
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.85),
                 fontSize: 14,
                 height: 1.5,
               ),
-            ),
-          );
-        }
-        
-        // Regular text
-        return Text(
-          line,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.white.withValues(alpha: 0.85),
-            fontSize: 14,
-            height: 1.5,
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -700,18 +782,22 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
     final parts = text.split('**');
     return RichText(
       text: TextSpan(
-        children: parts.asMap().entries.map((entry) {
-          final isBold = entry.key % 2 == 1;
-          return TextSpan(
-            text: entry.value,
-            style: TextStyle(
-              color: isUser ? Colors.white : Colors.white.withValues(alpha: 0.85),
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
-              height: 1.5,
-            ),
-          );
-        }).toList(),
+        children:
+            parts.asMap().entries.map((entry) {
+              final isBold = entry.key % 2 == 1;
+              return TextSpan(
+                text: entry.value,
+                style: TextStyle(
+                  color:
+                      isUser
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.85),
+                  fontSize: 14,
+                  fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+                  height: 1.5,
+                ),
+              );
+            }).toList(),
       ),
     );
   }
@@ -742,7 +828,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
               size: 14,
             ),
           ),
-          
+
           // Typing dots
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -765,16 +851,18 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
                 return AnimatedBuilder(
                   animation: _typingController,
                   builder: (context, child) {
-                    final progress = (_typingController.value + index * 0.2) % 1.0;
-                    final bounce = (progress < 0.5)
-                        ? progress * 2
-                        : 2 - progress * 2;
+                    final progress =
+                        (_typingController.value + index * 0.2) % 1.0;
+                    final bounce =
+                        (progress < 0.5) ? progress * 2 : 2 - progress * 2;
                     return Container(
                       width: 8,
                       height: 8,
                       margin: EdgeInsets.only(right: index < 2 ? 4 : 0),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3 + bounce * 0.4),
+                        color: Colors.white.withValues(
+                          alpha: 0.3 + bounce * 0.4,
+                        ),
                         shape: BoxShape.circle,
                       ),
                     );
@@ -792,8 +880,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
     // Bottom nav bar is positioned at bottom: 16 with SafeArea
     // Nav bar height: ~80px (icon + padding + text + spacing)
     // Total needed: nav bar height + position offset + extra spacing for visual separation
-    const bottomNavBarHeight = 120.0; // Increased to ensure input area sits above nav bar
-    
+    const bottomNavBarHeight =
+        120.0; // Increased to ensure input area sits above nav bar
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -830,10 +919,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
                     child: TextField(
                       controller: _messageController,
                       focusNode: _focusNode,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
                       decoration: InputDecoration(
                         hintText: 'Ask anything about PutraSportHub...',
                         hintStyle: TextStyle(
@@ -856,9 +942,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
               ),
             ),
           ),
-          
+
           const SizedBox(width: 10),
-          
+
           // Send button
           GestureDetector(
             onTap: _isLoading ? null : () => _sendMessage(),
@@ -866,24 +952,23 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                gradient: _isLoading
-                    ? null
-                    : const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryGreen,
-                          Color(0xFF1B5E4A),
-                        ],
-                      ),
+                gradient:
+                    _isLoading
+                        ? null
+                        : const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppTheme.primaryGreen, Color(0xFF1B5E4A)],
+                        ),
                 color: _isLoading ? Colors.white.withValues(alpha: 0.1) : null,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 Icons.arrow_upward_rounded,
-                color: _isLoading
-                    ? Colors.white.withValues(alpha: 0.3)
-                    : Colors.white,
+                color:
+                    _isLoading
+                        ? Colors.white.withValues(alpha: 0.3)
+                        : Colors.white,
                 size: 22,
               ),
             ),

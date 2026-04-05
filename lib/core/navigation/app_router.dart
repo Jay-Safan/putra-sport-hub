@@ -9,11 +9,8 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/booking/presentation/shared/facility_list_screen.dart';
 import '../../features/booking/presentation/shared/booking_flow_screen.dart';
 import '../../features/booking/presentation/shared/bookings_screen.dart';
-import '../../features/booking/presentation/student/split_bill_join_screen.dart';
-import '../../features/booking/presentation/student/split_bill_payment_screen.dart';
 import '../../features/booking/presentation/shared/booking_detail_screen.dart';
 import '../../features/booking/presentation/shared/booking_success_screen.dart';
-import '../../features/booking/presentation/shared/share_booking_screen.dart';
 import '../../features/payment/presentation/wallet_screen.dart';
 import '../../features/payment/presentation/top_up_screen.dart';
 import '../../features/referee/presentation/referee_dashboard_screen.dart';
@@ -57,7 +54,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   // Determine initial location - only use /splash on first app load
   // For subsequent rebuilds, try to preserve current location if possible
   String initialLocation = '/splash';
-  
+
   // If profile is being updated, try to stay on /profile
   if (isUpdatingProfile) {
     initialLocation = '/profile';
@@ -80,7 +77,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation.startsWith('/forgot-password');
 
       final currentLocation = state.matchedLocation;
-      
+
       // Splash screen handles its own navigation timing - don't redirect from it
       if (currentLocation == '/splash') {
         return null; // Let splash screen navigate itself
@@ -110,7 +107,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (!isAuthRoute) {
           // User not logged in and not on auth route - redirect to login
           // This ensures sign out from profile/home/etc. always goes to login
-          debugPrint('🔄 User not logged in - redirecting to /login from $currentLocation');
+          debugPrint(
+            '🔄 User not logged in - redirecting to /login from $currentLocation',
+          );
           return '/login';
         }
         // Already on auth route - stay there
@@ -120,7 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // User IS logged in - now check valid routes to prevent unnecessary redirects
       // List of all valid routes that should NEVER be interrupted by redirects when logged in
       final validRoutes = [
-        '/profile',    // Most critical - user might be uploading/removing profile picture
+        '/profile', // Most critical - user might be uploading/removing profile picture
         '/home',
         '/bookings',
         '/referee',
@@ -129,23 +128,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/tournaments',
         '/chat',
       ];
-      
-      final isOnValidRoute = validRoutes.contains(currentLocation) ||
+
+      final isOnValidRoute =
+          validRoutes.contains(currentLocation) ||
           currentLocation.startsWith('/booking/') ||
           currentLocation.startsWith('/tournament/') ||
           currentLocation.startsWith('/wallet') ||
           currentLocation.startsWith('/notifications');
-      
+
       // Never redirect away from valid routes when user is logged in
       if (isOnValidRoute) {
-        debugPrint('🛡️ Router redirect blocked - on valid route: $currentLocation');
+        debugPrint(
+          '🛡️ Router redirect blocked - on valid route: $currentLocation',
+        );
         return null; // Stay where you are - no redirects allowed
       }
 
       // Never redirect TO splash if already on a route (only allow splash on initial app load)
       // This prevents splash from interrupting any user activity
-      if (currentLocation != '/splash' && 
-          currentLocation != '/' && 
+      if (currentLocation != '/splash' &&
+          currentLocation != '/' &&
           currentLocation.isNotEmpty) {
         // Already on a route - don't redirect to splash
         return null;
@@ -207,7 +209,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (currentLocation == '/profile') {
         return null; // Always stay on profile screen - never redirect away
       }
-      
+
       // Also check valid routes again as final safety check
       if (isOnValidRoute) {
         return null; // Never redirect from valid routes
@@ -215,10 +217,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // If not logged in and trying to access protected route
       // BUT: Never redirect from profile screen (might be updating/removing profile picture)
-      if (!isLoggedIn && !isAuthRoute && currentLocation != '/profile' && !isOnValidRoute) {
+      if (!isLoggedIn &&
+          !isAuthRoute &&
+          currentLocation != '/profile' &&
+          !isOnValidRoute) {
         return '/login';
       }
-      
+
       // If logged in and on auth route (login/register), redirect based on role
       if (isLoggedIn && isAuthRoute) {
         // userDoc cannot be null when isLoggedIn is true
@@ -233,7 +238,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Check if admin is trying to access home or other regular routes
       if (isLoggedIn && userDoc.role == UserRole.admin) {
         // If admin is on home or other non-admin routes, redirect to admin
-        if (state.matchedLocation == '/home' || 
+        if (state.matchedLocation == '/home' ||
             state.matchedLocation.startsWith('/bookings') ||
             state.matchedLocation.startsWith('/referee') ||
             state.matchedLocation.startsWith('/tournament')) {
@@ -294,6 +299,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/home',
+            redirect: (context, state) {
+              final user = ref.read(currentUserProvider).valueOrNull;
+              // Admins should never access home - redirect to admin dashboard
+              if (RoleGuards.isAdmin(user)) {
+                return '/admin';
+              }
+              return null;
+            },
             pageBuilder:
                 (context, state) => TabPageTransition(
                   key: state.pageKey,
@@ -456,30 +469,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
       ),
       GoRoute(
-        path: '/booking/:bookingId/share',
-        redirect: (context, state) {
-          final user = ref.read(currentUserProvider).valueOrNull;
-          final mode = ref.read(activeUserModeProvider);
-          // Referees in referee mode cannot share bookings
-          if (mode == UserMode.referee && user?.isVerifiedReferee == true) {
-            return '/referee';
-          }
-          // Only students can share bookings (split bill feature)
-          return RouteGuard.checkAccess(
-            user,
-            RoleGuards.canUseSplitBill,
-            redirectTo: '/home',
-          );
-        },
-        pageBuilder:
-            (context, state) => FlowPageTransition(
-              key: state.pageKey,
-              child: ShareBookingScreen(
-                bookingId: state.pathParameters['bookingId']!,
-              ),
-            ),
-      ),
-      GoRoute(
         path: '/booking/success/:bookingId',
         redirect: (context, state) {
           final user = ref.read(currentUserProvider).valueOrNull;
@@ -497,57 +486,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 bookingId: state.pathParameters['bookingId']!,
               ),
             ),
-      ),
-      GoRoute(
-        path: '/booking/join',
-        redirect: (context, state) {
-          final user = ref.read(currentUserProvider).valueOrNull;
-          final mode = ref.read(activeUserModeProvider);
-          // Referees in referee mode cannot join bookings
-          if (mode == UserMode.referee && user?.isVerifiedReferee == true) {
-            return '/referee';
-          }
-          // Only students can join split bill bookings
-          return RouteGuard.checkAccess(
-            user,
-            RoleGuards.canJoinSplitBillBooking,
-            redirectTo: '/home',
-          );
-        },
-        pageBuilder:
-            (context, state) => FlowPageTransition(
-              key: state.pageKey,
-              child: SplitBillJoinScreen(
-                teamCode: state.uri.queryParameters['code'],
-              ),
-            ),
-      ),
-      GoRoute(
-        path: '/booking/:bookingId/split-bill/pay',
-        redirect: (context, state) {
-          final user = ref.read(currentUserProvider).valueOrNull;
-          final mode = ref.read(activeUserModeProvider);
-          // Referees in referee mode cannot pay for split bill bookings
-          if (mode == UserMode.referee && user?.isVerifiedReferee == true) {
-            return '/referee';
-          }
-          // Only students can pay for split bill bookings
-          return RouteGuard.checkAccess(
-            user,
-            RoleGuards.canUseSplitBill,
-            redirectTo: '/home',
-          );
-        },
-        pageBuilder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>?;
-          return FlowPageTransition(
-            key: state.pageKey,
-            child: SplitBillPaymentScreen(
-              bookingId: state.pathParameters['bookingId']!,
-              participantOderId: extra?['participantOderId'],
-            ),
-          );
-        },
       ),
 
       // ═══════════════════════════════════════════════════════════════════
@@ -568,11 +506,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ═══════════════════════════════════════════════════════════════════
       GoRoute(
         path: '/admin/users',
-        redirect: (context, state) => RouteGuard.checkAccess(
-          ref.read(currentUserProvider).valueOrNull,
-          RoleGuards.canManageUsers,
-          redirectTo: '/admin',
-        ),
+        redirect:
+            (context, state) => RouteGuard.checkAccess(
+              ref.read(currentUserProvider).valueOrNull,
+              RoleGuards.canManageUsers,
+              redirectTo: '/admin',
+            ),
         pageBuilder:
             (context, state) => FlowPageTransition(
               key: state.pageKey,
@@ -581,11 +520,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/bookings',
-        redirect: (context, state) => RouteGuard.checkAccess(
-          ref.read(currentUserProvider).valueOrNull,
-          RoleGuards.canManageBookings,
-          redirectTo: '/admin',
-        ),
+        redirect:
+            (context, state) => RouteGuard.checkAccess(
+              ref.read(currentUserProvider).valueOrNull,
+              RoleGuards.canManageBookings,
+              redirectTo: '/admin',
+            ),
         pageBuilder:
             (context, state) => FlowPageTransition(
               key: state.pageKey,
@@ -594,11 +534,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/tournaments',
-        redirect: (context, state) => RouteGuard.checkAccess(
-          ref.read(currentUserProvider).valueOrNull,
-          RoleGuards.canManageTournaments,
-          redirectTo: '/admin',
-        ),
+        redirect:
+            (context, state) => RouteGuard.checkAccess(
+              ref.read(currentUserProvider).valueOrNull,
+              RoleGuards.canManageTournaments,
+              redirectTo: '/admin',
+            ),
         pageBuilder:
             (context, state) => FlowPageTransition(
               key: state.pageKey,
@@ -607,11 +548,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/facilities',
-        redirect: (context, state) => RouteGuard.checkAccess(
-          ref.read(currentUserProvider).valueOrNull,
-          RoleGuards.canManageFacilities,
-          redirectTo: '/admin',
-        ),
+        redirect:
+            (context, state) => RouteGuard.checkAccess(
+              ref.read(currentUserProvider).valueOrNull,
+              RoleGuards.canManageFacilities,
+              redirectTo: '/admin',
+            ),
         pageBuilder:
             (context, state) => FlowPageTransition(
               key: state.pageKey,
@@ -620,11 +562,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/referees',
-        redirect: (context, state) => RouteGuard.checkAccess(
-          ref.read(currentUserProvider).valueOrNull,
-          RoleGuards.canManageReferees,
-          redirectTo: '/admin',
-        ),
+        redirect:
+            (context, state) => RouteGuard.checkAccess(
+              ref.read(currentUserProvider).valueOrNull,
+              RoleGuards.canManageReferees,
+              redirectTo: '/admin',
+            ),
         pageBuilder:
             (context, state) => FlowPageTransition(
               key: state.pageKey,
@@ -633,11 +576,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/transactions',
-        redirect: (context, state) => RouteGuard.checkAccess(
-          ref.read(currentUserProvider).valueOrNull,
-          RoleGuards.canViewAllTransactions,
-          redirectTo: '/admin',
-        ),
+        redirect:
+            (context, state) => RouteGuard.checkAccess(
+              ref.read(currentUserProvider).valueOrNull,
+              RoleGuards.canViewAllTransactions,
+              redirectTo: '/admin',
+            ),
         pageBuilder:
             (context, state) => FlowPageTransition(
               key: state.pageKey,
@@ -646,11 +590,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/analytics',
-        redirect: (context, state) => RouteGuard.checkAccess(
-          ref.read(currentUserProvider).valueOrNull,
-          RoleGuards.canManageUsers, // Use admin check
-          redirectTo: '/admin',
-        ),
+        redirect:
+            (context, state) => RouteGuard.checkAccess(
+              ref.read(currentUserProvider).valueOrNull,
+              RoleGuards.canManageUsers, // Use admin check
+              redirectTo: '/admin',
+            ),
         pageBuilder:
             (context, state) => FlowPageTransition(
               key: state.pageKey,

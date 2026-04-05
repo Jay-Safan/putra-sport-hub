@@ -46,16 +46,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         child: SafeArea(
           child: userAsync.when(
-            data: (user) => user != null
-                ? _buildProfileContent(context, ref, user)
-                : _buildNotLoggedIn(context),
+            data:
+                (user) =>
+                    user != null
+                        ? _buildProfileContent(context, ref, user)
+                        : _buildNotLoggedIn(context),
             loading: () => const ShimmerProfileLoading(),
-            error: (e, _) => Center(
-              child: Text(
-                'Error: $e',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
+            error:
+                (e, _) => Center(
+                  child: Text(
+                    'Error: $e',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
           ),
         ),
       ),
@@ -68,7 +71,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     UserModel user,
   ) {
     int animIndex = 0;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -84,36 +87,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 curve: Curves.easeOutBack,
               ),
           const SizedBox(height: 24),
-          
+
           // Become a Referee CTA - Prominent placement for students without badges
           if (user.isStudent && !user.isVerifiedReferee) ...[
-            _buildBecomeRefereeCard(context).cascadeIn(index: animIndex++, baseDelay: 200.ms),
+            _buildBecomeRefereeCard(
+              context,
+            ).cascadeIn(index: animIndex++, baseDelay: 200.ms),
             const SizedBox(height: 20),
           ],
-          
+
           // Mode Switch (only for students with referee badges)
           if (user.isVerifiedReferee && user.isStudent)
-            _buildModeSwitchCard(context, ref, user).cascadeIn(index: animIndex++, baseDelay: 200.ms),
+            _buildModeSwitchCard(
+              context,
+              ref,
+              user,
+            ).cascadeIn(index: animIndex++, baseDelay: 200.ms),
           if (user.isVerifiedReferee && user.isStudent)
             const SizedBox(height: 20),
-          
-          _buildWalletCard(context, ref, user).cascadeIn(index: animIndex++, baseDelay: 200.ms),
+
+          _buildWalletCard(
+            context,
+            ref,
+            user,
+          ).cascadeIn(index: animIndex++, baseDelay: 200.ms),
           const SizedBox(height: 20),
-          
-          if (user.isStudent) _buildMeritCard(context, user).cascadeIn(index: animIndex++, baseDelay: 200.ms),
+
+          if (user.isStudent)
+            _buildMeritCard(
+              context,
+              user,
+            ).cascadeIn(index: animIndex++, baseDelay: 200.ms),
           if (user.isStudent) const SizedBox(height: 20),
-          
-          _buildBadgesSection(context, user).cascadeIn(index: animIndex++, baseDelay: 200.ms),
+
+          _buildBadgesSection(
+            context,
+            user,
+          ).cascadeIn(index: animIndex++, baseDelay: 200.ms),
           const SizedBox(height: 20),
-          
-          _buildMenuSection(context, ref, user).cascadeIn(index: animIndex, baseDelay: 200.ms),
+
+          _buildMenuSection(
+            context,
+            ref,
+            user,
+          ).cascadeIn(index: animIndex, baseDelay: 200.ms),
           const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, WidgetRef ref, UserModel user) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    WidgetRef ref,
+    UserModel user,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -130,22 +158,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: Column(
             children: [
               // Avatar
               GestureDetector(
-                onTap: _isUploadingPhoto ? null : () => _showImagePickerOptions(context, ref, user),
+                onTap:
+                    _isUploadingPhoto
+                        ? null
+                        : () => _showImagePickerOptions(context, ref, user),
                 child: Stack(
                   children: [
                     AvatarWidget.fromUser(
                       user: user,
                       radius: 45,
                       showGlow: true,
-                      onTap: _isUploadingPhoto ? null : () => _showImagePickerOptions(context, ref, user),
+                      onTap:
+                          _isUploadingPhoto
+                              ? null
+                              : () =>
+                                  _showImagePickerOptions(context, ref, user),
                     ),
                     // Loading overlay on avatar - only shows when uploading
                     if (_isUploadingPhoto)
@@ -173,10 +206,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         decoration: BoxDecoration(
                           color: AppTheme.primaryGreen,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 2,
-                          ),
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                         child: const Icon(
                           Icons.camera_alt,
@@ -258,7 +288,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildWalletCard(BuildContext context, WidgetRef ref, UserModel user) {
     final walletAsync = ref.watch(walletProvider);
-    
+
     return GestureDetector(
       onTap: () => context.push('/wallet'),
       child: ClipRRect(
@@ -333,70 +363,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 walletAsync.when(
-                  data: (wallet) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'RM ${(wallet?.balance ?? 0.0).toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Available Balance',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  loading: () => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(
-                        height: 36,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.accentGold,
-                            strokeWidth: 2,
+                  data:
+                      (wallet) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'RM ${(wallet?.balance ?? 0.0).toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Available Balance',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Loading balance...',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 13,
-                        ),
+                  loading:
+                      () => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(
+                            height: 36,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: AppTheme.accentGold,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Loading balance...',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  error: (e, _) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'RM ${user.walletBalance.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  error:
+                      (e, _) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'RM ${user.walletBalance.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Available Balance',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Available Balance',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),
@@ -407,7 +440,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildMeritCard(BuildContext context, UserModel user) {
-    final progress = (user.totalMeritPoints / AppConstants.meritPointsMaxPerSemester)
+    final progress = (user.totalMeritPoints /
+            AppConstants.meritPointsMaxPerSemester)
         .clamp(0.0, 1.0);
 
     return InkWell(
@@ -436,113 +470,110 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.successGreen.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.successGreen.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.stars_rounded,
+                        color: AppTheme.successGreen,
+                        size: 22,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.stars_rounded,
-                      color: AppTheme.successGreen,
-                      size: 22,
+                    const SizedBox(width: 12),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MyMerit Points',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'GP08 Housing Merit',
+                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'MyMerit Points',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const Spacer(),
+                    Text(
+                      '${user.totalMeritPoints}',
+                      style: const TextStyle(
+                        color: AppTheme.successGreen,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        'GP08 Housing Merit',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${user.totalMeritPoints}',
-                    style: const TextStyle(
-                      color: AppTheme.successGreen,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Progress bar
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Semester Progress',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 12,
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Progress bar
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Semester Progress',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${user.totalMeritPoints}/${AppConstants.meritPointsMaxPerSemester} pts',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        Text(
+                          '${user.totalMeritPoints}/${AppConstants.meritPointsMaxPerSemester} pts',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.white.withValues(alpha: 0.1),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppTheme.successGreen,
-                      ),
-                      minHeight: 8,
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Tap indicator
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'View Details',
-                    style: TextStyle(
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppTheme.successGreen,
+                        ),
+                        minHeight: 8,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Tap indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'View Details',
+                      style: TextStyle(
+                        color: AppTheme.successGreen.withValues(alpha: 0.8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 12,
                       color: AppTheme.successGreen.withValues(alpha: 0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 12,
-                    color: AppTheme.successGreen.withValues(alpha: 0.8),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -564,9 +595,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,46 +630,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                children: user.badges.map((badge) {
-                  final badgeInfo = _getBadgeInfo(badge);
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          badgeInfo.color.withValues(alpha: 0.3),
-                          badgeInfo.color.withValues(alpha: 0.1),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: badgeInfo.color.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          badgeInfo.icon,
-                          color: badgeInfo.color,
-                          size: 18,
+                children:
+                    user.badges.map((badge) {
+                      final badgeInfo = _getBadgeInfo(badge);
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          badgeInfo.label,
-                          style: TextStyle(
-                            color: badgeInfo.color,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              badgeInfo.color.withValues(alpha: 0.3),
+                              badgeInfo.color.withValues(alpha: 0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: badgeInfo.color.withValues(alpha: 0.5),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              badgeInfo.icon,
+                              color: badgeInfo.color,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              badgeInfo.label,
+                              style: TextStyle(
+                                color: badgeInfo.color,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
               ),
             ],
           ),
@@ -653,7 +683,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // Only show informational message for students who aren't verified referees
     // (The prominent "Become a Referee" card above already handles the CTA)
     final isStudentNotReferee = user.isStudent && !user.isVerifiedReferee;
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
@@ -663,9 +693,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             children: [
@@ -678,12 +706,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      isStudentNotReferee 
-                          ? Icons.workspace_premium_outlined 
+                      isStudentNotReferee
+                          ? Icons.workspace_premium_outlined
                           : Icons.info_outline,
-                      color: isStudentNotReferee 
-                          ? Colors.white.withValues(alpha: 0.4)
-                          : AppTheme.infoBlue.withValues(alpha: 0.7),
+                      color:
+                          isStudentNotReferee
+                              ? Colors.white.withValues(alpha: 0.4)
+                              : AppTheme.infoBlue.withValues(alpha: 0.7),
                       size: 24,
                     ),
                   ),
@@ -693,7 +722,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isStudentNotReferee ? 'No Badges Yet' : 'Student Features',
+                          isStudentNotReferee
+                              ? 'No Badges Yet'
+                              : 'Student Features',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -704,7 +735,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(
                           isStudentNotReferee
                               ? 'Complete referee certification to earn your first badge'
-                              : 'Badges, merit points, split bill, and referee features are available when you sign in with an @student.upm.edu.my email.',
+                              : 'Badges, merit points, and referee features are available when you sign in with an @student.upm.edu.my email.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 12,
@@ -783,20 +814,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppTheme.upmRed.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: AppTheme.upmRed.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Row(
                 children: [
-                  Icon(
-                    Icons.swap_horiz,
-                    color: AppTheme.upmRed,
-                    size: 20,
-                  ),
+                  Icon(Icons.swap_horiz, color: AppTheme.upmRed, size: 20),
                   SizedBox(width: 8),
                   Text(
                     'App Mode',
@@ -825,7 +850,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: GestureDetector(
                       onTap: () async {
                         final authService = ref.read(authServiceProvider);
-                        ref.read(activeUserModeProvider.notifier).state = UserMode.student;
+                        ref.read(activeUserModeProvider.notifier).state =
+                            UserMode.student;
                         // Save preference to Firebase (non-blocking)
                         await authService.savePreferredMode(
                           uid: user.uid,
@@ -839,14 +865,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: currentMode == UserMode.student
-                              ? AppTheme.primaryGreen.withValues(alpha: 0.3)
-                              : Colors.white.withValues(alpha: 0.05),
+                          color:
+                              currentMode == UserMode.student
+                                  ? AppTheme.primaryGreen.withValues(alpha: 0.3)
+                                  : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: currentMode == UserMode.student
-                                ? AppTheme.primaryGreen
-                                : Colors.white.withValues(alpha: 0.2),
+                            color:
+                                currentMode == UserMode.student
+                                    ? AppTheme.primaryGreen
+                                    : Colors.white.withValues(alpha: 0.2),
                             width: currentMode == UserMode.student ? 2 : 1,
                           ),
                         ),
@@ -854,30 +882,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           children: [
                             Icon(
                               Icons.school,
-                              color: currentMode == UserMode.student
-                                  ? AppTheme.primaryGreenLight
-                                  : Colors.white.withValues(alpha: 0.6),
+                              color:
+                                  currentMode == UserMode.student
+                                      ? AppTheme.primaryGreenLight
+                                      : Colors.white.withValues(alpha: 0.6),
                               size: 24,
                             ),
                             const SizedBox(height: 6),
                             Text(
                               'Student',
                               style: TextStyle(
-                                color: currentMode == UserMode.student
-                                    ? Colors.white
-                                    : Colors.white.withValues(alpha: 0.6),
+                                color:
+                                    currentMode == UserMode.student
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.6),
                                 fontSize: 13,
-                                fontWeight: currentMode == UserMode.student
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                                fontWeight:
+                                    currentMode == UserMode.student
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                               ),
                             ),
                             Text(
                               'Mode',
                               style: TextStyle(
-                                color: currentMode == UserMode.student
-                                    ? Colors.white.withValues(alpha: 0.8)
-                                    : Colors.white.withValues(alpha: 0.5),
+                                color:
+                                    currentMode == UserMode.student
+                                        ? Colors.white.withValues(alpha: 0.8)
+                                        : Colors.white.withValues(alpha: 0.5),
                                 fontSize: 11,
                               ),
                             ),
@@ -892,7 +924,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: GestureDetector(
                       onTap: () async {
                         final authService = ref.read(authServiceProvider);
-                        ref.read(activeUserModeProvider.notifier).state = UserMode.referee;
+                        ref.read(activeUserModeProvider.notifier).state =
+                            UserMode.referee;
                         // Save preference to Firebase (non-blocking)
                         await authService.savePreferredMode(
                           uid: user.uid,
@@ -906,14 +939,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: currentMode == UserMode.referee
-                              ? AppTheme.upmRed.withValues(alpha: 0.3)
-                              : Colors.white.withValues(alpha: 0.05),
+                          color:
+                              currentMode == UserMode.referee
+                                  ? AppTheme.upmRed.withValues(alpha: 0.3)
+                                  : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: currentMode == UserMode.referee
-                                ? AppTheme.upmRed
-                                : Colors.white.withValues(alpha: 0.2),
+                            color:
+                                currentMode == UserMode.referee
+                                    ? AppTheme.upmRed
+                                    : Colors.white.withValues(alpha: 0.2),
                             width: currentMode == UserMode.referee ? 2 : 1,
                           ),
                         ),
@@ -921,30 +956,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           children: [
                             Icon(
                               Icons.sports_soccer,
-                              color: currentMode == UserMode.referee
-                                  ? AppTheme.upmRed
-                                  : Colors.white.withValues(alpha: 0.6),
+                              color:
+                                  currentMode == UserMode.referee
+                                      ? AppTheme.upmRed
+                                      : Colors.white.withValues(alpha: 0.6),
                               size: 24,
                             ),
                             const SizedBox(height: 6),
                             Text(
                               'Referee',
                               style: TextStyle(
-                                color: currentMode == UserMode.referee
-                                    ? Colors.white
-                                    : Colors.white.withValues(alpha: 0.6),
+                                color:
+                                    currentMode == UserMode.referee
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.6),
                                 fontSize: 13,
-                                fontWeight: currentMode == UserMode.referee
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                                fontWeight:
+                                    currentMode == UserMode.referee
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                               ),
                             ),
                             Text(
                               'Mode',
                               style: TextStyle(
-                                color: currentMode == UserMode.referee
-                                    ? Colors.white.withValues(alpha: 0.8)
-                                    : Colors.white.withValues(alpha: 0.5),
+                                color:
+                                    currentMode == UserMode.referee
+                                        ? Colors.white.withValues(alpha: 0.8)
+                                        : Colors.white.withValues(alpha: 0.5),
                                 fontSize: 11,
                               ),
                             ),
@@ -1088,62 +1127,62 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                 ),
-          const SizedBox(height: 14),
-          // Requirements
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Requirements:',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 14),
+                // Requirements
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Requirements:',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildRequirementRow('QKS2101', 'Football Referee'),
+                      const SizedBox(height: 4),
+                      _buildRequirementRow('QKS2104', 'Futsal Referee'),
+                      const SizedBox(height: 4),
+                      _buildRequirementRow('QKS2102', 'Badminton Referee'),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                _buildRequirementRow('QKS2101', 'Football Referee'),
-                const SizedBox(height: 4),
-                _buildRequirementRow('QKS2104', 'Futsal Referee'),
-                const SizedBox(height: 4),
-                _buildRequirementRow('QKS2102', 'Badminton Referee'),
+                const SizedBox(height: 14),
+                // CTA Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      context.push('/referee/apply');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.upmRed,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.upload_file, size: 20),
+                    label: const Text(
+                      'Apply Now',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          // CTA Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                context.push('/referee/apply');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.upmRed,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              icon: const Icon(Icons.upload_file, size: 20),
-              label: const Text(
-                'Apply Now',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
             ),
           ),
         ),
@@ -1195,9 +1234,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             children: [
@@ -1208,14 +1245,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   label: 'Admin Dashboard',
                   onTap: () => context.go('/admin'),
                   trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.upmRed,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Text(
                       'ADMIN',
-                      style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -1268,44 +1312,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         }
 
-        final unreadCountAsync = ref.watch(unreadNotificationsCountProvider(userId));
+        final unreadCountAsync = ref.watch(
+          unreadNotificationsCountProvider(userId),
+        );
 
         return unreadCountAsync.when(
-          data: (count) => _buildMenuItem(
-            icon: Icons.notifications_outlined,
-            label: 'Notifications',
-            onTap: () => context.push('/notifications'),
-            trailing: count > 0
-                ? Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorRed,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      count > 99 ? '99+' : count.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                : null,
-          ),
-          loading: () => _buildMenuItem(
-            icon: Icons.notifications_outlined,
-            label: 'Notifications',
-            onTap: () => context.push('/notifications'),
-          ),
-          error: (_, __) => _buildMenuItem(
-            icon: Icons.notifications_outlined,
-            label: 'Notifications',
-            onTap: () => context.push('/notifications'),
-          ),
+          data:
+              (count) => _buildMenuItem(
+                icon: Icons.notifications_outlined,
+                label: 'Notifications',
+                onTap: () => context.push('/notifications'),
+                trailing:
+                    count > 0
+                        ? Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorRed,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            count > 99 ? '99+' : count.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                        : null,
+              ),
+          loading:
+              () => _buildMenuItem(
+                icon: Icons.notifications_outlined,
+                label: 'Notifications',
+                onTap: () => context.push('/notifications'),
+              ),
+          error:
+              (_, __) => _buildMenuItem(
+                icon: Icons.notifications_outlined,
+                label: 'Notifications',
+                onTap: () => context.push('/notifications'),
+              ),
         );
       },
     );
@@ -1338,7 +1388,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 style: TextStyle(
                   color: color.withValues(alpha: isDestructive ? 1 : 0.9),
                   fontSize: 15,
-                  fontWeight: isDestructive ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight:
+                      isDestructive ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ),
@@ -1365,303 +1416,337 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.7),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(20),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF1A3D32).withValues(alpha: 0.95),
-                    const Color(0xFF0A1F1A).withValues(alpha: 0.95),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    spreadRadius: 5,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(20),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF1A3D32).withValues(alpha: 0.95),
+                        const Color(0xFF0A1F1A).withValues(alpha: 0.95),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Icon
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.errorRed.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.logout_rounded,
-                        color: AppTheme.errorRed,
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Title
-                    const Text(
-                      'Sign Out?',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Message
-                    Text(
-                      'Are you sure you want to sign out?\nYou\'ll need to sign in again to continue.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 14,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    // Buttons
-                    Row(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.3),
-                                width: 1.5,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                        // Icon
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorRed.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.logout_rounded,
+                            color: AppTheme.errorRed,
+                            size: 32,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              Navigator.pop(context);
-                              await ref.read(authServiceProvider).signOut();
-                              if (context.mounted) {
-                                context.go('/login');
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.errorRed,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Sign Out',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                        const SizedBox(height: 20),
+                        // Title
+                        const Text(
+                          'Sign Out?',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Message
+                        Text(
+                          'Are you sure you want to sign out?\nYou\'ll need to sign in again to continue.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        // Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  await ref.read(authServiceProvider).signOut();
+                                  if (context.mounted) {
+                                    context.go('/login');
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.errorRed,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: const Text(
+                                  'Sign Out',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 
-  Future<void> _showImagePickerOptions(BuildContext context, WidgetRef ref, UserModel user) async {
+  Future<void> _showImagePickerOptions(
+    BuildContext context,
+    WidgetRef ref,
+    UserModel user,
+  ) async {
     // Bottom navigation bar height - adjust if needed
     const bottomNavBarHeight = 90.0;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true, // Enable for better control
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + bottomNavBarHeight,
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.12),
-                    Colors.white.withValues(alpha: 0.05),
-                  ],
-                ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  width: 1.5,
-                ),
+      builder:
+          (context) => Padding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.of(context).viewInsets.bottom + bottomNavBarHeight,
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
               ),
-              child: SafeArea(
-                bottom: false, // Manual padding handling
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                  // Handle
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 12, bottom: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.12),
+                        Colors.white.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1.5,
                     ),
                   ),
-                  
-                  // Title
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'Change Profile Picture',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Options
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SafeArea(
+                    bottom: false, // Manual padding handling
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Gallery option
-                        _buildImagePickerOption(
-                          context: context,
-                          icon: Icons.photo_library_rounded,
-                          title: 'Choose from Gallery',
-                          subtitle: 'Select an existing photo',
-                          onTap: () async {
-                            // Don't close bottom sheet yet - will close after upload completes
-                            await _pickAndUploadImage(context, ref, user, ImageSource.gallery);
-                            if (context.mounted && Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        
-                        // Camera option
-                        _buildImagePickerOption(
-                          context: context,
-                          icon: Icons.camera_alt_rounded,
-                          title: 'Take Photo',
-                          subtitle: 'Capture a new photo',
-                          onTap: () async {
-                            // Don't close bottom sheet yet - will close after upload completes
-                            await _pickAndUploadImage(context, ref, user, ImageSource.camera);
-                            if (context.mounted && Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-                        
-                        // Remove option (if photo exists)
-                        if (user.photoUrl != null && user.photoUrl!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          const Divider(
-                            color: Colors.white24,
-                            height: 1,
-                            thickness: 1,
+                        // Handle
+                        Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(top: 12, bottom: 24),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                          const SizedBox(height: 12),
-                          _buildImagePickerOption(
-                            context: context,
-                            icon: Icons.delete_outline_rounded,
-                            title: 'Remove Photo',
-                            subtitle: 'Remove current profile picture',
-                            isDestructive: true,
-                            onTap: () async {
-                              Navigator.pop(context);
-                              await _removeProfilePicture(context, ref, user);
-                            },
+                        ),
+
+                        // Title
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            'Change Profile Picture',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Options
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            children: [
+                              // Gallery option
+                              _buildImagePickerOption(
+                                context: context,
+                                icon: Icons.photo_library_rounded,
+                                title: 'Choose from Gallery',
+                                subtitle: 'Select an existing photo',
+                                onTap: () async {
+                                  // Don't close bottom sheet yet - will close after upload completes
+                                  await _pickAndUploadImage(
+                                    context,
+                                    ref,
+                                    user,
+                                    ImageSource.gallery,
+                                  );
+                                  if (context.mounted &&
+                                      Navigator.canPop(context)) {
+                                    Navigator.pop(context);
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Camera option
+                              _buildImagePickerOption(
+                                context: context,
+                                icon: Icons.camera_alt_rounded,
+                                title: 'Take Photo',
+                                subtitle: 'Capture a new photo',
+                                onTap: () async {
+                                  // Don't close bottom sheet yet - will close after upload completes
+                                  await _pickAndUploadImage(
+                                    context,
+                                    ref,
+                                    user,
+                                    ImageSource.camera,
+                                  );
+                                  if (context.mounted &&
+                                      Navigator.canPop(context)) {
+                                    Navigator.pop(context);
+                                  }
+                                },
+                              ),
+
+                              // Remove option (if photo exists)
+                              if (user.photoUrl != null &&
+                                  user.photoUrl!.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                const Divider(
+                                  color: Colors.white24,
+                                  height: 1,
+                                  thickness: 1,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildImagePickerOption(
+                                  context: context,
+                                  icon: Icons.delete_outline_rounded,
+                                  title: 'Remove Photo',
+                                  subtitle: 'Remove current profile picture',
+                                  isDestructive: true,
+                                  onTap: () async {
+                                    Navigator.pop(context);
+                                    await _removeProfilePicture(
+                                      context,
+                                      ref,
+                                      user,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Cancel button
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  width: 1.5,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Cancel button
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1.5,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    ),
     );
   }
 
@@ -1674,7 +1759,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     bool isDestructive = false,
   }) {
     final color = isDestructive ? AppTheme.errorRed : AppTheme.primaryGreen;
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1700,14 +1785,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 16),
-              
+
               // Text content
               Expanded(
                 child: Column(
@@ -1732,7 +1813,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
               ),
-              
+
               // Arrow icon
               Icon(
                 Icons.chevron_right_rounded,
@@ -1746,14 +1827,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Future<void> _pickAndUploadImage(BuildContext context, WidgetRef ref, UserModel user, ImageSource source) async {
+  Future<void> _pickAndUploadImage(
+    BuildContext context,
+    WidgetRef ref,
+    UserModel user,
+    ImageSource source,
+  ) async {
     try {
       // Store platform check before async operations
       final isAndroid = Theme.of(context).platform == TargetPlatform.android;
-      
+
       // Check and request permissions
       PermissionStatus permissionStatus;
-      
+
       if (source == ImageSource.camera) {
         permissionStatus = await Permission.camera.request();
         if (!permissionStatus.isGranted) {
@@ -1780,7 +1866,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         } else {
           permissionStatus = await Permission.photos.request();
         }
-        
+
         if (!permissionStatus.isGranted) {
           if (!mounted) return;
           _showPermissionDeniedDialog(
@@ -1805,7 +1891,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      final errorMessage = ErrorHandler.getUserFriendlyErrorMessage(e, context: 'image picker', defaultMessage: 'Failed to pick image. Please try again.');
+      final errorMessage = ErrorHandler.getUserFriendlyErrorMessage(
+        e,
+        context: 'image picker',
+        defaultMessage: 'Failed to pick image. Please try again.',
+      );
       ScaffoldMessenger.of(this.context).showSnackBar(
         SnackBar(
           content: Text(errorMessage),
@@ -1819,43 +1909,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  void _showPermissionDeniedDialog(BuildContext dialogContext, String title, String message) {
+  void _showPermissionDeniedDialog(
+    BuildContext dialogContext,
+    String title,
+    String message,
+  ) {
     showDialog(
       context: dialogContext,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A3D32),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          message,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1A3D32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              message,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings();
+                },
+                child: const Text(
+                  'Open Settings',
+                  style: TextStyle(color: AppTheme.primaryGreen),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              openAppSettings();
-            },
-            child: const Text('Open Settings', style: TextStyle(color: AppTheme.primaryGreen)),
-          ),
-        ],
-      ),
     );
   }
 
   void _showSuccessAnimation(BuildContext dialogContext) {
     if (!mounted) return;
-    
+
     showDialog(
       context: dialogContext,
       barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -1868,7 +1972,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Navigator.of(dialogBuildContext, rootNavigator: true).pop();
           }
         });
-        
+
         return PopScope(
           canPop: true, // Allow back button to dismiss
           child: GestureDetector(
@@ -1883,7 +1987,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Future<void> _uploadProfilePicture(BuildContext context, WidgetRef ref, UserModel user, XFile imageFile) async {
+  Future<void> _uploadProfilePicture(
+    BuildContext context,
+    WidgetRef ref,
+    UserModel user,
+    XFile imageFile,
+  ) async {
     if (!mounted) return;
 
     // Set flag to prevent router redirects during profile update
@@ -1921,31 +2030,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
 
       if (!mounted) return;
-      
+
       // Hide loading overlay
       setState(() {
         _isUploadingPhoto = false;
       });
-      
+
       // Clear flag - allow router redirects again (after delay to ensure Firestore update completes)
       // Use longer delay to ensure all provider updates have settled
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
           ref.read(isUpdatingProfileProvider.notifier).state = false;
-          debugPrint('✅ Profile update flag cleared (upload) - router redirects enabled again');
+          debugPrint(
+            '✅ Profile update flag cleared (upload) - router redirects enabled again',
+          );
         }
       });
-      
+
       // Capture context-dependent objects right after mounted check
       // ignore: use_build_context_synchronously
       final currentContext = context;
       // ignore: use_build_context_synchronously
       final scaffoldMessenger = ScaffoldMessenger.of(currentContext);
-      
+
       // Show success animation
       // ignore: use_build_context_synchronously
       _showSuccessAnimation(currentContext);
-      
+
       // Show success snackbar
       scaffoldMessenger.showSnackBar(
         SnackBar(
@@ -1964,28 +2075,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           duration: const Duration(seconds: 2),
         ),
       );
-      
+
       // No need to invalidate provider - userModelStream uses Firestore snapshots()
       // which automatically updates when the document changes in Firestore
       // This prevents router redirects that happen during provider invalidation
     } catch (e) {
       if (!mounted) return;
-      
+
       // Hide loading overlay
       setState(() {
         _isUploadingPhoto = false;
       });
-      
+
       // Clear flag on error too (with delay to prevent immediate router rebuild)
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
           ref.read(isUpdatingProfileProvider.notifier).state = false;
-          debugPrint('✅ Profile update flag cleared (upload error) - router redirects enabled again');
+          debugPrint(
+            '✅ Profile update flag cleared (upload error) - router redirects enabled again',
+          );
         }
       });
-      
+
       // ignore: use_build_context_synchronously
-      final errorMessage = ErrorHandler.getUserFriendlyErrorMessage(e, context: 'profile picture upload', defaultMessage: 'Failed to update profile picture. Please try again.');
+      final errorMessage = ErrorHandler.getUserFriendlyErrorMessage(
+        e,
+        context: 'profile picture upload',
+        defaultMessage: 'Failed to update profile picture. Please try again.',
+      );
       // ignore: use_build_context_synchronously
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       scaffoldMessenger.showSnackBar(
@@ -2007,14 +2124,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Future.delayed(const Duration(milliseconds: 1000), () {
           if (mounted) {
             ref.read(isUpdatingProfileProvider.notifier).state = false;
-            debugPrint('✅ Profile update flag cleared (finally) - router redirects enabled again');
+            debugPrint(
+              '✅ Profile update flag cleared (finally) - router redirects enabled again',
+            );
           }
         });
       }
     }
   }
 
-  Future<void> _removeProfilePicture(BuildContext context, WidgetRef ref, UserModel user) async {
+  Future<void> _removeProfilePicture(
+    BuildContext context,
+    WidgetRef ref,
+    UserModel user,
+  ) async {
     if (!mounted) return;
 
     // Set flag to prevent router redirects during profile update
@@ -2038,21 +2161,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
 
       if (!mounted) return;
-      
+
       // Hide loading overlay
       setState(() {
         _isUploadingPhoto = false;
       });
-      
+
       // Clear flag - allow router redirects again (after delay to ensure Firestore update completes)
       // Use longer delay to ensure all provider updates have settled
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
           ref.read(isUpdatingProfileProvider.notifier).state = false;
-          debugPrint('✅ Profile update flag cleared (removal) - router redirects enabled again');
+          debugPrint(
+            '✅ Profile update flag cleared (removal) - router redirects enabled again',
+          );
         }
       });
-      
+
       // ignore: use_build_context_synchronously
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       scaffoldMessenger.showSnackBar(
@@ -2072,28 +2197,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           duration: const Duration(seconds: 2),
         ),
       );
-      
+
       // No need to invalidate provider - userModelStream uses Firestore snapshots()
       // which automatically updates when the document changes in Firestore
       // This prevents router redirects that happen during provider invalidation
     } catch (e) {
       if (!mounted) return;
-      
+
       // Hide loading overlay
       setState(() {
         _isUploadingPhoto = false;
       });
-      
+
       // Clear flag on error too (with delay to prevent immediate router rebuild)
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
           ref.read(isUpdatingProfileProvider.notifier).state = false;
-          debugPrint('✅ Profile update flag cleared (removal error) - router redirects enabled again');
+          debugPrint(
+            '✅ Profile update flag cleared (removal error) - router redirects enabled again',
+          );
         }
       });
-      
+
       // ignore: use_build_context_synchronously
-      final errorMessage = ErrorHandler.getUserFriendlyErrorMessage(e, context: 'profile picture removal', defaultMessage: 'Failed to remove profile picture. Please try again.');
+      final errorMessage = ErrorHandler.getUserFriendlyErrorMessage(
+        e,
+        context: 'profile picture removal',
+        defaultMessage: 'Failed to remove profile picture. Please try again.',
+      );
       // ignore: use_build_context_synchronously
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       scaffoldMessenger.showSnackBar(
@@ -2133,10 +2264,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () => context.go('/login'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryGreen,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
             ),
             child: const Text('Sign In'),
           ),
@@ -2205,7 +2333,8 @@ class _SuccessAnimationDialog extends StatefulWidget {
   const _SuccessAnimationDialog();
 
   @override
-  State<_SuccessAnimationDialog> createState() => _SuccessAnimationDialogState();
+  State<_SuccessAnimationDialog> createState() =>
+      _SuccessAnimationDialogState();
 }
 
 class _SuccessAnimationDialogState extends State<_SuccessAnimationDialog>
@@ -2222,19 +2351,15 @@ class _SuccessAnimationDialogState extends State<_SuccessAnimationDialog>
       duration: const Duration(milliseconds: 600),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.elasticOut,
-      ),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeIn,
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
   }
@@ -2285,10 +2410,5 @@ class _BadgeInfo {
   final IconData icon;
   final Color color;
 
-  _BadgeInfo({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
+  _BadgeInfo({required this.label, required this.icon, required this.color});
 }
-

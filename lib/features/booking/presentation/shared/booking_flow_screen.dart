@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../../../../../core/theme/app_theme.dart';
@@ -11,7 +12,6 @@ import '../../../../../../../../../core/utils/date_time_utils.dart'
 import '../../../../../../../../../core/utils/date_time_utils.dart' as dt;
 import '../../../../../../../../../providers/providers.dart';
 import '../../data/models/facility_model.dart';
-import '../../data/models/booking_model.dart';
 
 /// Enum to represent time slot states for better UI handling
 enum SlotState {
@@ -37,13 +37,161 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
       []; // Multiple slots for hourly booking
   String? _selectedCourt;
   bool _isLoading = false;
-  bool _enableSplitBill = false; // Split bill toggle for students
   bool _requestReferee =
       false; // Optional referee for practice sessions (students only)
+
+  // Booking timer state (10-minute reservation period)
+  Timer? _reservationTimer;
+  DateTime? _reservationExpiry;
+  int _remainingSeconds = 600; // 10 minutes = 600 seconds
+  bool _showTimerWarning = false;
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _reservationTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Start the 10-minute reservation timer
+  void _startReservationTimer() {
+    // Cancel any existing timer
+    _reservationTimer?.cancel();
+
+    // Set expiry time to 10 minutes from now
+    _reservationExpiry = DateTime.now().add(const Duration(minutes: 10));
+    _remainingSeconds = 600; // Reset to 10 minutes
+    _showTimerWarning = false;
+
+    // Debug: Log timer start
+    print('🕐 Timer started at step $_currentStep');
+
+    // Start countdown timer (updates every second)
+    _reservationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _remainingSeconds--;
+
+        // Show warning when 2 minutes remaining
+        if (_remainingSeconds == 120) {
+          _showTimerWarning = true;
+          _showTimerWarningDialog();
+        }
+
+        // Timer expired - reset booking
+        if (_remainingSeconds <= 0) {
+          timer.cancel();
+          _handleTimerExpiry();
+        }
+      });
+    });
+  }
+
+  /// Stop and clear the reservation timer
+  void _stopReservationTimer() {
+    _reservationTimer?.cancel();
+    _reservationTimer = null;
+    _reservationExpiry = null;
+    _remainingSeconds = 600;
+    _showTimerWarning = false;
+  }
+
+  /// Show warning dialog when 2 minutes remaining
+  void _showTimerWarningDialog() {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1A3D32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Row(
+              children: [
+                Icon(
+                  Icons.timer_outlined,
+                  color: AppTheme.warningAmber,
+                  size: 28,
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'Time Running Out!',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+            content: Text(
+              'Your reservation will expire in 2 minutes. Please complete your payment to secure this booking.',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(color: AppTheme.primaryGreenLight),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  /// Handle timer expiry - reset booking and show notification
+  void _handleTimerExpiry() {
+    if (!mounted) return;
+
+    // Clear selections
+    setState(() {
+      _selectedSlot = null;
+      _selectedSlots.clear();
+      _selectedCourt = null;
+      _requestReferee = false;
+      _currentStep = 1; // Go back to time selection
+    });
+
+    // Show expiry notification
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.timer_off, color: Colors.white),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Reservation expired. Please select your time slot again.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.warningAmber,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  /// Format remaining time as MM:SS
+  String _formatRemainingTime() {
+    final minutes = _remainingSeconds ~/ 60;
+    final seconds = _remainingSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   /// Check if facility uses hourly booking (can book multiple consecutive hours)
@@ -142,12 +290,20 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
   void _handleBack(BuildContext context) {
     // If on first step, go back to facility list or show cancel dialog
     if (_currentStep == 0) {
+      // Stop timer if active
+      _stopReservationTimer();
+
       if (context.canPop()) {
         context.pop();
       } else {
         context.go('/home');
       }
     } else {
+      // Stop timer when going back from confirmation (step 2) to time selection (step 1)
+      if (_currentStep == 2) {
+        _stopReservationTimer();
+      }
+
       // Go back one step within the flow
       setState(() {
         _currentStep--;
@@ -162,35 +318,122 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
           (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF1A3D32),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
             ),
-            title: const Text(
-              'Cancel Booking?',
-              style: TextStyle(color: Colors.white),
-            ),
-            content: Text(
-              'Are you sure you want to cancel? Your progress will be lost.',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  'Continue',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Warning icon with glow effect
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.warningAmber.withValues(alpha: 0.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.warningAmber.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.warning_rounded,
+                    color: AppTheme.warningAmber,
+                    size: 32,
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  context.go('/home');
-                },
-                child: const Text(
-                  'Cancel Booking',
-                  style: TextStyle(color: AppTheme.errorRed),
+                const SizedBox(height: 20),
+
+                // Title with better typography
+                const Text(
+                  'Cancel Booking?',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+
+                // Progress context
+                Text(
+                  'Your booking progress will be lost:',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Progress items
+                Column(
+                  children: [
+                    _buildProgressItem('Selected date & time', Icons.schedule),
+                    _buildProgressItem(
+                      'Facility preferences',
+                      Icons.location_on,
+                    ),
+                    if (_currentStep >= 2)
+                      _buildProgressItem('Booking details', Icons.assignment),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Buttons with better styling
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Go Back',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          context.go('/home');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.errorRed,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 8,
+                          shadowColor: AppTheme.errorRed.withValues(alpha: 0.4),
+                        ),
+                        child: const Text(
+                          'Cancel Booking',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
     );
   }
@@ -251,6 +494,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
           children: [
             // Background orbs - ignore pointer events
             IgnorePointer(child: _buildBackgroundOrbs()),
+
             facilityAsync.when(
               data: (facility) {
                 if (facility == null) {
@@ -271,12 +515,13 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                         child: _buildProgressIndicator(),
                       ),
                     ),
-                    const SizedBox(height: 20),
+
+                    const SizedBox(height: 12),
 
                     // Content
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                         child: _buildStepContent(facility, isStudent),
                       ),
                     ),
@@ -381,28 +626,76 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
-          child: Builder(
-            builder: (context) {
-              // Simplified flow: Date → Time → Confirm (3 steps for everyone)
-              // Organizer mode (Practice/Match) has been moved to tournament creation
-              return Row(
-                children: [
-                  _buildStepDot(0, 'Date'),
-                  _buildStepLine(0),
-                  _buildStepDot(1, 'Time'),
-                  _buildStepLine(1),
-                  _buildStepDot(2, 'Confirm'),
-                ],
-              );
-            },
+          child: Row(
+            children: [
+              _buildStepDot(0, 'Date'),
+              _buildStepLine(0),
+              _buildStepDot(1, 'Time'),
+              _buildStepLine(1),
+              _buildStepDot(2, 'Confirm'),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Build compact inline timer badge
+  Widget _buildCompactTimerBadge() {
+    // Determine styling based on remaining time
+    Color timerColor;
+    double glowIntensity;
+
+    if (_remainingSeconds > 300) {
+      // > 5 minutes: Subtle green
+      timerColor = AppTheme.primaryGreen;
+      glowIntensity = 0.2;
+    } else if (_remainingSeconds > 120) {
+      // 2-5 minutes: Amber warning
+      timerColor = Colors.amber;
+      glowIntensity = 0.3;
+    } else {
+      // < 2 minutes: Red urgent
+      timerColor = Colors.redAccent;
+      glowIntensity = 0.5;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: timerColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: timerColor.withValues(alpha: 0.4), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: timerColor.withValues(alpha: glowIntensity),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.schedule, color: timerColor, size: 14),
+          const SizedBox(width: 5),
+          Text(
+            _formatRemainingTime(),
+            style: TextStyle(
+              color: timerColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -512,6 +805,70 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                   ? AppTheme.primaryGreen
                   : Colors.white.withValues(alpha: 0.15),
         ),
+      ),
+    );
+  }
+
+  /// Build compact floating timer badge (shown during time selection and confirmation)
+  Widget _buildFloatingTimerBadge() {
+    // Determine color based on remaining time
+    Color timerColor;
+    Color borderColor;
+    bool showPulse = false;
+
+    if (_remainingSeconds > 300) {
+      // > 5 minutes: Green (safe)
+      timerColor = AppTheme.primaryGreen;
+      borderColor = AppTheme.primaryGreen.withValues(alpha: 0.5);
+    } else if (_remainingSeconds > 120) {
+      // 2-5 minutes: Amber (warning)
+      timerColor = Colors.amber;
+      borderColor = Colors.amber.withValues(alpha: 0.6);
+    } else {
+      // < 2 minutes: Red (urgent) with pulse
+      timerColor = Colors.redAccent;
+      borderColor = Colors.redAccent.withValues(alpha: 0.8);
+      showPulse = true;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF0A1F1A).withValues(alpha: 0.95),
+            const Color(0xFF132E25).withValues(alpha: 0.95),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: showPulse ? 2 : 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: timerColor.withValues(alpha: 0.3),
+            blurRadius: showPulse ? 12 : 8,
+            spreadRadius: showPulse ? 2 : 0,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            showPulse ? Icons.timer_off : Icons.schedule,
+            color: timerColor,
+            size: 16,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            _formatRemainingTime(),
+            style: TextStyle(
+              color: timerColor,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1049,7 +1406,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
         // Court Selection (for Badminton) - Moved to top
         if (facility.hasSubUnits) ...[
@@ -1069,10 +1426,10 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
               fontSize: 13,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: 8,
+            runSpacing: 8,
             children:
                 facility.subUnits.map((court) {
                   final isSelected = _selectedCourt == court;
@@ -1141,14 +1498,20 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
           const SizedBox(height: 28),
         ],
 
-        // Time Slots Header
-        Text(
-          'Select Time Slot',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+        // Time Slots Header with Timer
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Select Time Slot',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (_reservationTimer != null) _buildCompactTimerBadge(),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -1189,6 +1552,13 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                 final isAvailable = slot.isAvailable;
                 final isPast = DateTimeUtils.hasPassed(slot.startTime);
                 final isBooked = !isAvailable && !isPast;
+
+                // Debug logging to verify booked slots are detected
+                if (isBooked) {
+                  debugPrint(
+                    '🔴 BOOKED SLOT DETECTED: ${slot.label} - isAvailable: ${slot.isAvailable}',
+                  );
+                }
 
                 // For hourly booking, check if slot can be added/removed
                 final canAdd =
@@ -1479,13 +1849,17 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
         break;
 
       case SlotState.booked:
-        // Booked by someone else - clear red/error styling with label
-        borderColor = AppTheme.errorRed.withValues(alpha: 0.6);
-        backgroundColor = AppTheme.errorRed.withValues(alpha: 0.2);
-        textColor = Colors.white.withValues(alpha: 0.7);
-        icon = Icons.event_busy;
-        iconColor = AppTheme.errorRed;
-        opacity = 0.9;
+        // Booked by someone else - PROMINENT red styling for visibility
+        borderColor = AppTheme.errorRed.withValues(
+          alpha: 0.8,
+        ); // More visible border
+        backgroundColor = AppTheme.errorRed.withValues(
+          alpha: 0.35,
+        ); // Stronger red background
+        textColor = Colors.white.withValues(alpha: 0.95); // Brighter text
+        icon = Icons.block; // More obvious "blocked" icon
+        iconColor = AppTheme.errorRed.withValues(alpha: 0.95); // Brighter icon
+        opacity = 1.0; // Full opacity for maximum visibility
         showStrikethrough = true;
         break;
 
@@ -1510,8 +1884,22 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: borderColor,
-            width: slotState == SlotState.booked ? 1.5 : 1,
+            width:
+                slotState == SlotState.booked
+                    ? 2.0
+                    : 1, // Thicker border for booked
           ),
+          // Add red glow effect for booked slots
+          boxShadow:
+              slotState == SlotState.booked
+                  ? [
+                    BoxShadow(
+                      color: AppTheme.errorRed.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                  : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1660,7 +2048,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Split bill and student pricing are only available for UPM students.',
+                      'Student pricing is only available for UPM students.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 12,
@@ -1707,13 +2095,20 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Booking Summary',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+        // Booking Summary Header with Timer
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Booking Summary',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (_reservationTimer != null) _buildCompactTimerBadge(),
+          ],
         ),
         const SizedBox(height: 20),
 
@@ -1806,66 +2201,24 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                       valueColor: AppTheme.accentGold,
                     ),
                   ],
-                  if (_enableSplitBill && isStudent) ...[
-                    Divider(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      height: 24,
-                    ),
-                    _buildSummaryRow(
-                      'Split Bill',
-                      'Enabled',
-                      valueColor: AppTheme.primaryGreen,
-                      isBold: true,
-                    ),
-                    _buildSummaryRow(
-                      'Per Person (est.)',
-                      'RM ${(_calculateTotalWithReferee(facility, isStudent) / AppConstants.getRecommendedSplitBillParticipants(facility.sport)).toStringAsFixed(2)}',
-                      valueColor: AppTheme.primaryGreenLight,
-                    ),
-                  ],
                   Divider(
                     color: Colors.white.withValues(alpha: 0.1),
                     height: 32,
                   ),
-                  if (_enableSplitBill && isStudent) ...[
-                    // For split bill, show "Your Share" instead of "Total"
-                    _buildSummaryRow(
-                      'Your Share',
-                      'RM ${(_calculateTotalWithReferee(facility, isStudent) / 2).toStringAsFixed(2)}',
-                      isBold: true,
-                      isHighlighted: true,
-                      valueColor: AppTheme.primaryGreenLight,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Total: RM ${_calculateTotalWithReferee(facility, isStudent).toStringAsFixed(2)} (split among participants)',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 11,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ] else ...[
-                    // For normal booking, show full total
-                    _buildSummaryRow(
-                      'Total',
-                      'RM ${_calculateTotalWithReferee(facility, isStudent).toStringAsFixed(2)}',
-                      isBold: true,
-                      isHighlighted: true,
-                    ),
-                  ],
+                  // Total amount
+                  _buildSummaryRow(
+                    'Total Amount',
+                    'RM ${_calculateTotalWithReferee(facility, isStudent).toStringAsFixed(2)}',
+                    isBold: true,
+                    isHighlighted: true,
+                    valueColor: AppTheme.primaryGreenLight,
+                  ),
                 ],
               ),
             ),
           ),
         ),
         const SizedBox(height: 24),
-
-        // Split Bill Option (Students Only)
-        if (isStudent) ...[
-          _buildSplitBillToggle(facility, isStudent),
-          const SizedBox(height: 16),
-        ],
 
         // Request Referee Option (Students Only - for practice sessions)
         if (isStudent) ...[
@@ -1884,6 +2237,16 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
           ),
         if (isStudent) const SizedBox(height: 16),
 
+        // Payment Timer Warning
+        _buildGlassInfoBox(
+          icon: Icons.timer_outlined,
+          iconColor: AppTheme.warningAmber,
+          title: 'Complete Payment Within 10 Minutes',
+          subtitle:
+              'Your booking will expire after 10 minutes if payment is not completed. The time slot will become available again.',
+        ),
+        const SizedBox(height: 16),
+
         // Cancellation Policy
         _buildGlassInfoBox(
           icon: Icons.info_outline,
@@ -1893,190 +2256,6 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
               'Free cancellation up to 24 hours before. Refund goes to SukanPay Wallet.',
         ),
       ],
-    );
-  }
-
-  /// Build split bill toggle option (Students only)
-  Widget _buildSplitBillToggle(FacilityModel facility, bool isStudent) {
-    // Calculate fee based on booking type
-    final int durationHours;
-    if (_isHourlyBooking(facility)) {
-      durationHours = _selectedHours;
-    } else {
-      durationHours =
-          _selectedSlot?.endTime.difference(_selectedSlot!.startTime).inHours ??
-          2;
-    }
-    // Calculate facility fee correctly based on facility type
-    final basePrice = facility.getPrice(isStudent);
-    final facilityFee =
-        facility.type == FacilityType.session
-            ? basePrice // Session-based: flat rate per session
-            : basePrice * durationHours; // Hourly: price × hours
-
-    // Calculate price per person (assuming 2 people initially, will be recalculated as more join)
-    final pricePerPerson = facilityFee / 2;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.primaryGreen.withValues(alpha: 0.15),
-                AppTheme.primaryGreenLight.withValues(alpha: 0.08),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color:
-                  _enableSplitBill
-                      ? AppTheme.primaryGreen.withValues(alpha: 0.4)
-                      : Colors.white.withValues(alpha: 0.15),
-              width: _enableSplitBill ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.people,
-                      color: AppTheme.primaryGreen,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Split Bill',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Share costs with friends',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: _enableSplitBill,
-                    onChanged: (value) {
-                      setState(() {
-                        _enableSplitBill = value;
-                      });
-                    },
-                    activeThumbColor: AppTheme.primaryGreen,
-                    activeTrackColor: AppTheme.primaryGreenLight,
-                  ),
-                ],
-              ),
-              if (_enableSplitBill) ...[
-                const SizedBox(height: 16),
-                Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Share the booking cost with friends. Each person pays their share (up to ${AppConstants.getMaxSplitBillParticipants(facility.sport)} for ${facility.sport.displayName}).',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Estimated per person',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'RM ${pricePerPerson.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: AppTheme.primaryGreenLight,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Up to 10 people',
-                          style: TextStyle(
-                            color: AppTheme.primaryGreenLight,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -2329,7 +2508,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Optional for practice sessions',
+                          'Optional • Perfect for practice, drills & friendly matches',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 13,
@@ -2430,7 +2609,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'A referee job will be posted in SukanGig marketplace for certified referees to apply.',
+                  'A referee job will be posted in SukanGig marketplace for certified referees to apply. Great for getting professional officiating during practice!',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 12,
@@ -2635,53 +2814,19 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                                       }
                                     }
 
-                                    final recommendedParticipants =
-                                        facility != null
-                                            ? AppConstants.getRecommendedSplitBillParticipants(
-                                              facility.sport,
-                                            )
-                                            : 2; // Default fallback
-                                    final shareAmount =
-                                        recommendedParticipants > 0
-                                            ? facilityFee /
-                                                recommendedParticipants
-                                            : facilityFee;
-
                                     return _currentStep == 2
-                                        ? Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              _enableSplitBill && isStudent
-                                                  ? 'Pay Your Share'
-                                                  : 'Confirm Booking',
-                                              style: TextStyle(
-                                                color:
-                                                    _canProceed()
-                                                        ? Colors.white
-                                                        : Colors.white
-                                                            .withValues(
-                                                              alpha: 0.4,
-                                                            ),
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            if (_enableSplitBill &&
-                                                isStudent &&
-                                                shareAmount > 0) ...[
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                'RM ${shareAmount.toStringAsFixed(2)}',
-                                                style: TextStyle(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.8),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
+                                        ? Text(
+                                          'Confirm Booking',
+                                          style: TextStyle(
+                                            color:
+                                                _canProceed()
+                                                    ? Colors.white
+                                                    : Colors.white.withValues(
+                                                      alpha: 0.4,
+                                                    ),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         )
                                         : Text(
                                           'Continue',
@@ -2736,6 +2881,12 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
 
   Future<void> _handleNext() async {
     if (_currentStep < 2) {
+      // Start reservation timer when entering time selection (step 0 → 1)
+      // Timer is visible during time selection and confirmation steps
+      if (_currentStep == 0) {
+        _startReservationTimer();
+      }
+
       // Move to next step
       setState(() => _currentStep++);
     } else {
@@ -2772,11 +2923,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
       endTime = _selectedSlot!.endTime;
     }
 
-    // Calculate facility fee
-    final durationHours = endTime.difference(startTime).inHours;
-    final facilityFee = facility.getPrice(isStudent) * durationHours;
-
-    // Simple booking - split bill available for students
+    // Simple booking - direct payment only
     // All bookings are treated as Practice bookings
 
     // Create simple practice booking
@@ -2790,32 +2937,10 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
           startTime: startTime,
           endTime: endTime,
           subUnit: _selectedCourt,
-          isSplitBill:
-              isStudent ? _enableSplitBill : false, // Split bill for students
           requestReferee:
               isStudent
                   ? _requestReferee
                   : false, // Optional referee for practice
-          splitParticipants:
-              _enableSplitBill && isStudent
-                  ? [
-                    // Add organizer as first participant when split bill is enabled
-                    // Initial share calculated based on sport's recommended participant count
-                    // Amount will be recalculated automatically as more participants join
-                    SplitBillParticipant(
-                      oderId: user.uid, // Set organizer's user ID
-                      email: user.email,
-                      name: user.displayName,
-                      amount:
-                          facilityFee /
-                          AppConstants.getRecommendedSplitBillParticipants(
-                            facility.sport,
-                          ),
-                      hasPaid:
-                          false, // Will be set to true after organizer pays
-                    ),
-                  ]
-                  : null,
           bookingType: BookingType.practice, // All simple bookings are practice
           tournamentFormat: null, // No tournament format for simple bookings
         );
@@ -2844,11 +2969,12 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
     }
 
     // Process payment via SukanPay wallet
-    // UNIFIED LOGIC: For split bill, organizer pays only their share
-    // Booking stays PENDING_PAYMENT until all participants paid (auto-confirmed)
     final paymentService = ref.read(paymentServiceProvider);
+
+    final booking = result.booking!;
+
     final paymentResult = await paymentService.processBookingPayment(
-      booking: result.booking!,
+      booking: booking,
       user: user,
       useWallet: true,
     );
@@ -2913,30 +3039,29 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
     // Payment succeeded - proceed with success flow
     if (!mounted) return;
 
-    // For split bill bookings, status will be auto-confirmed when all participants paid
-    // For normal bookings, status is already confirmed by processBookingPayment
+    // Stop reservation timer as booking is now complete
+    _stopReservationTimer();
+
+    // Booking status is already confirmed by processBookingPayment
     // So we don't need to manually update status here - it's handled in the payment service
 
     // Refresh bookings list to ensure new booking appears in "My Bookings"
     ref.invalidate(userBookingsProvider);
     ref.invalidate(upcomingBookingsProvider);
 
-    // Get updated booking to check for split bill team code
-    final updatedBooking = await ref
-        .read(bookingServiceProvider)
-        .getBookingById(result.booking!.id);
-    final hasSplitBill = updatedBooking?.isSplitBill ?? false;
-    final teamCode = updatedBooking?.teamCode;
+    // CRITICAL: Invalidate available slots provider to refresh slot availability
+    // This ensures when user navigates back to booking, the booked slot shows as unavailable
+    ref.invalidate(availableSlotsProvider);
 
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white, size: 20),
                 SizedBox(width: 12),
@@ -2951,72 +3076,6 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                 ),
               ],
             ),
-            if (hasSplitBill && teamCode != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.people,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Team Code: $teamCode',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Share this code with friends to split the cost',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.copy,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        // Copy team code to clipboard
-                        Clipboard.setData(ClipboardData(text: teamCode));
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Team code copied to clipboard!'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
         backgroundColor: AppTheme.successGreen,
@@ -3035,5 +3094,28 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
   String _getDayName(DateTime date) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return days[date.weekday - 1];
+  }
+
+  Widget _buildProgressItem(String text, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: AppTheme.warningAmber.withValues(alpha: 0.8),
+            size: 16,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

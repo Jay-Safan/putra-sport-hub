@@ -1,8 +1,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:flutter/foundation.dart';
 
 /// Analytics service for tracking user behavior and app performance
-/// 
+///
 /// This service provides a centralized way to log events to Firebase Analytics
 /// throughout the app. All analytics tracking should go through this service.
 class AnalyticsService {
@@ -20,24 +19,18 @@ class AnalyticsService {
   /// Track user login
   Future<void> logLogin({String? loginMethod}) async {
     try {
-      await _analytics.logLogin(
-        loginMethod: loginMethod ?? 'email',
-      );
-      debugPrint('📊 Analytics: Login event logged');
+      await _analytics.logLogin(loginMethod: loginMethod ?? 'email');
     } catch (e) {
-      debugPrint('❌ Analytics error (login): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
   /// Track user signup
   Future<void> logSignUp({String? signUpMethod}) async {
     try {
-      await _analytics.logSignUp(
-        signUpMethod: signUpMethod ?? 'email',
-      );
-      debugPrint('📊 Analytics: Sign up event logged');
+      await _analytics.logSignUp(signUpMethod: signUpMethod ?? 'email');
     } catch (e) {
-      debugPrint('❌ Analytics error (sign up): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -48,10 +41,7 @@ class AnalyticsService {
     bool? isReferee,
   }) async {
     try {
-      await _analytics.setUserProperty(
-        name: 'user_role',
-        value: userRole,
-      );
+      await _analytics.setUserProperty(name: 'user_role', value: userRole);
       if (isStudent != null) {
         await _analytics.setUserProperty(
           name: 'is_student',
@@ -64,9 +54,8 @@ class AnalyticsService {
           value: isReferee.toString(),
         );
       }
-      debugPrint('📊 Analytics: User properties set');
     } catch (e) {
-      debugPrint('❌ Analytics error (set user properties): $e');
+      // Non-critical: Analytics property setting failure shouldn't block user flow
     }
   }
 
@@ -81,7 +70,6 @@ class AnalyticsService {
     required String sport,
     required double amount,
     bool isStudent = false,
-    bool isSplitBill = false,
   }) async {
     try {
       await _analytics.logEvent(
@@ -92,12 +80,10 @@ class AnalyticsService {
           'sport': sport,
           'amount': amount,
           'is_student': isStudent,
-          'is_split_bill': isSplitBill,
         },
       );
-      debugPrint('📊 Analytics: Booking created event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (booking created): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -109,33 +95,10 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: 'booking_cancelled',
-        parameters: {
-          'booking_id': bookingId,
-          'reason': reason,
-        },
+        parameters: {'booking_id': bookingId, 'reason': reason},
       );
-      debugPrint('📊 Analytics: Booking cancelled event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (booking cancelled): $e');
-    }
-  }
-
-  /// Track split bill join
-  Future<void> logSplitBillJoined({
-    required String bookingId,
-    required String teamCode,
-  }) async {
-    try {
-      await _analytics.logEvent(
-        name: 'split_bill_joined',
-        parameters: {
-          'booking_id': bookingId,
-          'team_code': teamCode,
-        },
-      );
-      debugPrint('📊 Analytics: Split bill joined event logged');
-    } catch (e) {
-      debugPrint('❌ Analytics error (split bill joined): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -162,9 +125,8 @@ class AnalyticsService {
           'max_teams': maxTeams,
         },
       );
-      debugPrint('📊 Analytics: Tournament created event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (tournament created): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -176,14 +138,10 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: 'tournament_joined',
-        parameters: {
-          'tournament_id': tournamentId,
-          'team_name': teamName,
-        },
+        parameters: {'tournament_id': tournamentId, 'team_name': teamName},
       );
-      debugPrint('📊 Analytics: Tournament joined event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (tournament joined): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -200,9 +158,8 @@ class AnalyticsService {
           'current_teams': currentTeams,
         },
       );
-      debugPrint('📊 Analytics: Tournament cancelled event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (tournament cancelled): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -228,14 +185,10 @@ class AnalyticsService {
       await _analytics.logPurchase(
         currency: 'MYR',
         value: amount,
-        parameters: {
-          'payment_method': paymentMethod,
-          'type': 'top_up',
-        },
+        parameters: {'payment_method': paymentMethod, 'type': 'top_up'},
       );
-      debugPrint('📊 Analytics: Top up event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (top up): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -243,7 +196,6 @@ class AnalyticsService {
   Future<void> logBookingPayment({
     required String bookingId,
     required double amount,
-    bool isSplitBill = false,
   }) async {
     try {
       await _analytics.logEvent(
@@ -251,13 +203,11 @@ class AnalyticsService {
         parameters: {
           'booking_id': bookingId,
           'amount': amount,
-          'is_split_bill': isSplitBill,
           'currency': 'MYR',
         },
       );
-      debugPrint('📊 Analytics: Booking payment event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (booking payment): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -275,9 +225,8 @@ class AnalyticsService {
           'currency': 'MYR',
         },
       );
-      debugPrint('📊 Analytics: Tournament payment event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (tournament payment): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -294,15 +243,10 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: 'referee_job_applied',
-        parameters: {
-          'job_id': jobId,
-          'sport': sport,
-          'earnings': earnings,
-        },
+        parameters: {'job_id': jobId, 'sport': sport, 'earnings': earnings},
       );
-      debugPrint('📊 Analytics: Referee job applied event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (referee job applied): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -314,14 +258,10 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: 'referee_job_completed',
-        parameters: {
-          'job_id': jobId,
-          'earnings': earnings,
-        },
+        parameters: {'job_id': jobId, 'earnings': earnings},
       );
-      debugPrint('📊 Analytics: Referee job completed event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (referee job completed): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -339,9 +279,8 @@ class AnalyticsService {
         screenName: screenName,
         screenClass: screenClass,
       );
-      debugPrint('📊 Analytics: Screen view logged: $screenName');
     } catch (e) {
-      debugPrint('❌ Analytics error (screen view): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -362,9 +301,8 @@ class AnalyticsService {
           if (messageLength != null) 'message_length': messageLength,
         },
       );
-      debugPrint('📊 Analytics: Chatbot message event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (chatbot message): $e');
+      // Non-critical: Analytics logging failure shouldn't block user flow
     }
   }
 
@@ -387,9 +325,8 @@ class AnalyticsService {
           if (context != null) 'context': context,
         },
       );
-      debugPrint('📊 Analytics: Error event logged');
     } catch (e) {
-      debugPrint('❌ Analytics error (log error): $e');
+      // Non-critical: Analytics error logging failure (silent failure)
     }
   }
 }

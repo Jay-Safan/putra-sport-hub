@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart';
 import '../core/constants/app_constants.dart';
 import '../features/notifications/data/models/notification_model.dart';
 
@@ -10,8 +9,8 @@ class NotificationService {
   final Uuid _uuid;
 
   NotificationService()
-      : _firestore = FirebaseFirestore.instance,
-        _uuid = const Uuid();
+    : _firestore = FirebaseFirestore.instance,
+      _uuid = const Uuid();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CREATE NOTIFICATIONS
@@ -47,8 +46,8 @@ class NotificationService {
           .doc(notificationId)
           .set(notification.toFirestore());
     } catch (e) {
-      debugPrint('Error creating notification: $e');
       // Don't throw - notifications are non-critical
+      // Silently fail to avoid disrupting main operations
     }
   }
 
@@ -64,7 +63,8 @@ class NotificationService {
       userId: userId,
       type: NotificationType.bookingConfirmed,
       title: 'Booking Confirmed! 🎉',
-      body: 'Your booking for $facilityName on ${_formatDate(bookingDate)} at ${_formatTime(startTime)} is confirmed.',
+      body:
+          'Your booking for $facilityName on ${_formatDate(bookingDate)} at ${_formatTime(startTime)} is confirmed.',
       relatedId: bookingId,
       route: '/bookings',
       data: {'bookingId': bookingId},
@@ -82,9 +82,10 @@ class NotificationService {
       userId: userId,
       type: NotificationType.bookingCancelled,
       title: 'Booking Cancelled',
-      body: reason != null
-          ? 'Your booking for $facilityName has been cancelled. Reason: $reason'
-          : 'Your booking for $facilityName has been cancelled.',
+      body:
+          reason != null
+              ? 'Your booking for $facilityName has been cancelled. Reason: $reason'
+              : 'Your booking for $facilityName has been cancelled.',
       relatedId: bookingId,
       route: '/bookings',
       data: {'bookingId': bookingId},
@@ -99,15 +100,17 @@ class NotificationService {
     required DateTime startTime,
     required int hoursUntil,
   }) async {
-    final type = hoursUntil >= 24
-        ? NotificationType.bookingReminder24h
-        : NotificationType.bookingReminder1h;
+    final type =
+        hoursUntil >= 24
+            ? NotificationType.bookingReminder24h
+            : NotificationType.bookingReminder1h;
 
     await createNotification(
       userId: userId,
       type: type,
       title: 'Booking Reminder',
-      body: 'Your booking for $facilityName is ${hoursUntil >= 24 ? "tomorrow" : "in 1 hour"} at ${_formatTime(startTime)}.',
+      body:
+          'Your booking for $facilityName is ${hoursUntil >= 24 ? "tomorrow" : "in 1 hour"} at ${_formatTime(startTime)}.',
       relatedId: bookingId,
       route: '/bookings',
       data: {'bookingId': bookingId},
@@ -125,7 +128,8 @@ class NotificationService {
       userId: userId,
       type: NotificationType.paymentReceived,
       title: 'Payment Received 💰',
-      body: 'Payment of RM ${amount.toStringAsFixed(2)} has been received successfully.',
+      body:
+          'Payment of RM ${amount.toStringAsFixed(2)} has been received successfully.',
       relatedId: bookingId ?? transactionId,
       route: bookingId != null ? '/bookings' : '/payment/transactions',
       data: {
@@ -150,10 +154,7 @@ class NotificationService {
       body: 'Your payment failed: $reason. Please try again.',
       relatedId: bookingId ?? transactionId,
       route: bookingId != null ? '/bookings' : '/payment',
-      data: {
-        'transactionId': transactionId,
-        'bookingId': bookingId,
-      },
+      data: {'transactionId': transactionId, 'bookingId': bookingId},
     );
   }
 
@@ -167,13 +168,11 @@ class NotificationService {
       userId: userId,
       type: NotificationType.refundProcessed,
       title: 'Refund Processed 💸',
-      body: 'A refund of RM ${amount.toStringAsFixed(2)} has been processed for your cancelled booking.',
+      body:
+          'A refund of RM ${amount.toStringAsFixed(2)} has been processed for your cancelled booking.',
       relatedId: bookingId,
       route: '/bookings',
-      data: {
-        'bookingId': bookingId,
-        'amount': amount,
-      },
+      data: {'bookingId': bookingId, 'amount': amount},
     );
   }
 
@@ -190,7 +189,8 @@ class NotificationService {
       userId: userId,
       type: NotificationType.refereeJobAssigned,
       title: 'New Referee Job! 🏆',
-      body: 'You\'ve been assigned to ref a $sport match at $facilityName on ${_formatDate(matchDate)} at ${_formatTime(startTime)}.',
+      body:
+          'You\'ve been assigned to ref a $sport match at $facilityName on ${_formatDate(matchDate)} at ${_formatTime(startTime)}.',
       relatedId: jobId,
       route: '/referee/jobs',
       data: {'jobId': jobId},
@@ -208,9 +208,10 @@ class NotificationService {
       userId: userId,
       type: NotificationType.refereeJobCancelled,
       title: 'Referee Job Cancelled',
-      body: reason != null
-          ? 'Your referee job at $facilityName has been cancelled. Reason: $reason'
-          : 'Your referee job at $facilityName has been cancelled.',
+      body:
+          reason != null
+              ? 'Your referee job at $facilityName has been cancelled. Reason: $reason'
+              : 'Your referee job at $facilityName has been cancelled.',
       relatedId: jobId,
       route: '/referee/jobs',
       data: {'jobId': jobId},
@@ -227,123 +228,11 @@ class NotificationService {
       userId: userId,
       type: NotificationType.refereePaymentReleased,
       title: 'Payment Released 💵',
-      body: 'Your referee payment of RM ${amount.toStringAsFixed(2)} has been released to your wallet.',
+      body:
+          'Your referee payment of RM ${amount.toStringAsFixed(2)} has been released to your wallet.',
       relatedId: jobId,
       route: '/payment',
-      data: {
-        'jobId': jobId,
-        'amount': amount,
-      },
-    );
-  }
-
-  /// Create split bill request notification
-  Future<void> notifySplitBillRequest({
-    required String userId,
-    required String bookingId,
-    required String organizerName,
-    required double amount,
-    required String teamCode,
-  }) async {
-    await createNotification(
-      userId: userId,
-      type: NotificationType.splitBillRequest,
-      title: 'Split Bill Request 👥',
-      body: '$organizerName invited you to split a bill. Your share: RM ${amount.toStringAsFixed(2)}. Team code: $teamCode',
-      relatedId: bookingId,
-      route: '/payment/split-bill',
-      data: {
-        'bookingId': bookingId,
-        'teamCode': teamCode,
-        'amount': amount,
-      },
-    );
-  }
-
-  /// Notify organizer when participant joins split bill booking
-  Future<void> notifyParticipantJoined({
-    required String organizerUserId,
-    required String bookingId,
-    required String participantName,
-    required String facilityName,
-    required int totalParticipants,
-  }) async {
-    await createNotification(
-      userId: organizerUserId,
-      type: NotificationType.splitBillRequest,
-      title: 'New Participant Joined 👥',
-      body: '$participantName joined your booking for $facilityName. Total participants: $totalParticipants',
-      relatedId: bookingId,
-      route: '/booking/$bookingId',
-      data: {
-        'bookingId': bookingId,
-        'participantName': participantName,
-      },
-    );
-  }
-
-  /// Notify organizer when participant pays their share
-  Future<void> notifyParticipantPaid({
-    required String organizerUserId,
-    required String bookingId,
-    required String participantName,
-    required double amount,
-    required int paidCount,
-    required int totalCount,
-  }) async {
-    await createNotification(
-      userId: organizerUserId,
-      type: NotificationType.splitBillPaid,
-      title: 'Payment Received 💰',
-      body: '$participantName paid RM ${amount.toStringAsFixed(2)}. Progress: $paidCount/$totalCount paid',
-      relatedId: bookingId,
-      route: '/booking/$bookingId',
-      data: {
-        'bookingId': bookingId,
-        'participantName': participantName,
-        'amount': amount,
-      },
-    );
-  }
-
-  /// Notify all participants when booking is confirmed (all paid)
-  Future<void> notifySplitBillConfirmed({
-    required List<String> participantUserIds,
-    required String bookingId,
-    required String facilityName,
-    required DateTime startTime,
-  }) async {
-    for (final userId in participantUserIds) {
-      await createNotification(
-        userId: userId,
-        type: NotificationType.bookingConfirmed,
-        title: 'Booking Confirmed! 🎉',
-        body: 'All payments received! Your booking for $facilityName on ${_formatDate(startTime)} at ${_formatTime(startTime)} is confirmed.',
-        relatedId: bookingId,
-        route: '/booking/$bookingId',
-        data: {'bookingId': bookingId},
-      );
-    }
-  }
-
-  /// Create split bill paid notification (legacy - keeping for compatibility)
-  Future<void> notifySplitBillPaid({
-    required String userId,
-    required String bookingId,
-    required String participantName,
-    required double amount,
-  }) async {
-    await createNotification(
-      userId: userId,
-      type: NotificationType.splitBillPaid,
-      title: 'Split Bill Payment Received ✅',
-      body: '$participantName has paid their share of RM ${amount.toStringAsFixed(2)}.',
-      relatedId: bookingId,
-      route: '/payment/split-bill',
-      data: {
-        'bookingId': bookingId,
-        'amount': amount,
-      },
+      data: {'jobId': jobId, 'amount': amount},
     );
   }
 
@@ -358,7 +247,8 @@ class NotificationService {
       userId: userId,
       type: NotificationType.tournamentCreated,
       title: 'Tournament Created! 🏅',
-      body: 'A new $sport tournament "$tournamentName" has been created. Check it out!',
+      body:
+          'A new $sport tournament "$tournamentName" has been created. Check it out!',
       relatedId: tournamentId,
       route: '/tournaments',
       data: {'tournamentId': tournamentId},
@@ -394,13 +284,11 @@ class NotificationService {
       userId: userId,
       type: NotificationType.weatherWarning,
       title: 'Weather Warning 🌧️',
-      body: 'Weather alert for your booking at $facilityName on ${_formatDate(bookingDate)}: $warningMessage',
+      body:
+          'Weather alert for your booking at $facilityName on ${_formatDate(bookingDate)}: $warningMessage',
       relatedId: bookingId,
       route: '/bookings',
-      data: {
-        'bookingId': bookingId,
-        'facilityName': facilityName,
-      },
+      data: {'bookingId': bookingId, 'facilityName': facilityName},
     );
   }
 
@@ -418,11 +306,7 @@ class NotificationService {
       body: 'You\'ve earned $points merit points. Reason: $reason',
       relatedId: recordId,
       route: '/merit',
-      data: {
-        'points': points,
-        'reason': reason,
-        'recordId': recordId,
-      },
+      data: {'points': points, 'reason': reason, 'recordId': recordId},
     );
   }
 
@@ -437,9 +321,12 @@ class NotificationService {
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => NotificationModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => NotificationModel.fromFirestore(doc))
+                  .toList(),
+        );
   }
 
   /// Get unread notifications count
@@ -464,18 +351,19 @@ class NotificationService {
           .doc(notificationId)
           .update({'isRead': true});
     } catch (e) {
-      debugPrint('Error marking notification as read: $e');
+      // Silently fail - non-critical operation
     }
   }
 
   /// Mark all notifications as read for a user
   Future<void> markAllAsRead(String userId) async {
     try {
-      final snapshot = await _firestore
-          .collection(AppConstants.notificationsCollection)
-          .where('userId', isEqualTo: userId)
-          .where('isRead', isEqualTo: false)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection(AppConstants.notificationsCollection)
+              .where('userId', isEqualTo: userId)
+              .where('isRead', isEqualTo: false)
+              .get();
 
       final batch = _firestore.batch();
       for (var doc in snapshot.docs) {
@@ -483,7 +371,7 @@ class NotificationService {
       }
       await batch.commit();
     } catch (e) {
-      debugPrint('Error marking all notifications as read: $e');
+      // Silently fail - non-critical operation
     }
   }
 
@@ -495,18 +383,19 @@ class NotificationService {
           .doc(notificationId)
           .delete();
     } catch (e) {
-      debugPrint('Error deleting notification: $e');
+      // Silently fail - non-critical operation
     }
   }
 
   /// Delete all read notifications for a user
   Future<void> deleteAllRead(String userId) async {
     try {
-      final snapshot = await _firestore
-          .collection(AppConstants.notificationsCollection)
-          .where('userId', isEqualTo: userId)
-          .where('isRead', isEqualTo: true)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection(AppConstants.notificationsCollection)
+              .where('userId', isEqualTo: userId)
+              .where('isRead', isEqualTo: true)
+              .get();
 
       final batch = _firestore.batch();
       for (var doc in snapshot.docs) {
@@ -514,7 +403,7 @@ class NotificationService {
       }
       await batch.commit();
     } catch (e) {
-      debugPrint('Error deleting read notifications: $e');
+      // Silently fail - non-critical operation
     }
   }
 
@@ -533,4 +422,3 @@ class NotificationService {
     return '$hour:$minute $period';
   }
 }
-

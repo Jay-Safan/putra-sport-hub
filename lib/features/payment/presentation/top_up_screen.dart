@@ -19,7 +19,7 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   String _selectedPaymentMethod = 'Cash / Bank Transfer';
-  
+
   final List<String> _paymentMethods = [
     'Cash / Bank Transfer',
     'Online Banking',
@@ -46,10 +46,7 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
         ),
         title: const Text(
           'Top Up Wallet',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -88,34 +85,35 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
-                    children: [20, 50, 100, 200].map((amount) {
-                      return GestureDetector(
-                        onTap: () {
-                          _amountController.text = amount.toString();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
+                    children:
+                        [20, 50, 100, 200].map((amount) {
+                          return GestureDetector(
+                            onTap: () {
+                              _amountController.text = amount.toString();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: Text(
+                                'RM $amount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            'RM $amount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
                   ),
                   const SizedBox(height: 32),
                   // Amount Input
@@ -164,7 +162,9 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                             ),
                           ),
                           validator: (value) {
-                            final result = Validators.validateTopUpAmount(value);
+                            final result = Validators.validateTopUpAmount(
+                              value,
+                            );
                             return result.isValid ? null : result.errorMessage;
                           },
                         ),
@@ -200,7 +200,9 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                                color: AppTheme.primaryGreen.withValues(
+                                  alpha: 0.2,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
@@ -215,7 +217,9 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                                 initialValue: _selectedPaymentMethod,
                                 decoration: const InputDecoration(
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(vertical: 16),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
                                 ),
                                 dropdownColor: const Color(0xFF1A3D32),
                                 style: const TextStyle(
@@ -227,12 +231,13 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                                   Icons.arrow_drop_down,
                                   color: Colors.white.withValues(alpha: 0.7),
                                 ),
-                                items: _paymentMethods.map((method) {
-                                  return DropdownMenuItem<String>(
-                                    value: method,
-                                    child: Text(method),
-                                  );
-                                }).toList(),
+                                items:
+                                    _paymentMethods.map((method) {
+                                      return DropdownMenuItem<String>(
+                                        value: method,
+                                        child: Text(method),
+                                      );
+                                    }).toList(),
                                 onChanged: (value) {
                                   if (value != null) {
                                     setState(() {
@@ -248,7 +253,7 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Top Up Button
+                  // Top Up Button with Premium Loading Animation
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleTopUp,
                     style: ElevatedButton.styleFrom(
@@ -258,31 +263,54 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      disabledBackgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                      disabledBackgroundColor: AppTheme.primaryGreen.withValues(
+                        alpha: 0.5,
+                      ),
+                      elevation: _isLoading ? 0 : 8,
+                      shadowColor: AppTheme.primaryGreen.withValues(alpha: 0.4),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_circle, size: 22),
-                              SizedBox(width: 12),
-                              Text(
-                                'Top Up',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                    child:
+                        _isLoading
+                            ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Processing Payment...',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                    color: Colors.white.withValues(alpha: 0.95),
+                                  ),
+                                ),
+                              ],
+                            )
+                            : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_circle, size: 22),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Top Up',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
                   ),
                   const SizedBox(height: 16),
                   // Info
@@ -355,7 +383,7 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
         ref.invalidate(walletProvider);
         // Invalidate transaction history provider to show new transaction
         ref.invalidate(transactionHistoryProvider);
-        
+
         // Show success animation
         await SuccessAnimationDialog.show(
           context,
@@ -364,7 +392,7 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
           color: AppTheme.primaryGreen,
           delay: const Duration(milliseconds: 1800),
         );
-        
+
         // Pop back to wallet screen
         if (mounted) context.pop();
       } else {
@@ -388,4 +416,3 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
     }
   }
 }
-

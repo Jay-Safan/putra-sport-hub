@@ -1,6 +1,6 @@
 # PutraSportHub - Domain Knowledge & Reference
-**Version:** 1.3.0  
-**Last Updated:** January 11, 2026  
+**Version:** 1.4.0  
+**Last Updated:** January 26, 2026  
 **Purpose:** Domain knowledge, business rules, and user flows for developers
 
 ---
@@ -77,26 +77,141 @@
 
 **Important Notes:**
 - **Referee Requirements by Sport:**
-  - **Football:** 3 referees (1 main referee + 2 linesmen) - RM 120 total (tournament) / RM 60 total (practice)
-  - **Futsal:** 1 referee (solo) - RM 40 (tournament) / RM 20 (practice)
-  - **Badminton:** 1 umpire - RM 40 (tournament) / RM 20 (practice)
-  - **Tennis:** 1 chair umpire (optional) - RM 40 (tournament) / RM 20 (practice)
-- Referees are automatically assigned to **tournaments**. For **normal bookings**, referees are **optional** (for practice sessions).
-- Referee fee: **RM 40 per referee per tournament match**, **RM 20 per referee per practice session** (tournaments: organizer pays when registration closes; practice: optional add-on).
+  - **Football:** 3 referees (1 main referee + 2 linesmen)
+    - Tournament: RM 120 total (3 × RM 40)
+    - Practice: RM 60 total (3 × RM 20)
+  - **Futsal:** 1 referee (solo)
+    - Tournament: RM 40
+    - Practice: RM 20
+  - **Badminton:** 1 umpire
+    - Tournament: RM 40
+    - Practice: RM 20
+  - **Tennis:** 1 chair umpire (optional)
+    - Tournament: RM 40
+    - Practice: RM 20
+
+- **Referee System (Two Types):**
+  1. **Tournament Referees:** Mandatory for all tournament matches (automatically assigned)
+  2. **Normal Booking Referees:** Optional add-on for practice sessions/friendly matches
+
+- **Multi-Referee Logic:**
+  - Partial assignment allowed (e.g., football can have 1/3, 2/3, or 3/3 referees)
+  - **Proportional Payment:** Only assigned referees are paid
+  - **Auto-Refund:** Unused referee fees refunded to organizer
+  - Example: Football job with 3 referee slots:
+    - If 2 referees accept: RM 40 paid (2 × RM 20), RM 20 refunded
+    - If 0 referees accept by endTime: RM 60 refunded (auto-cancelled)
+
+- **Referee Job Lifecycle:**
+  ```
+  Normal Bookings:
+  Payment → OPEN (visible until endTime) → ASSIGNED (referee accepts)
+  → endTime reached → COMPLETED (auto) → PAID (escrow release)
+  
+  If no referee by endTime: OPEN → CANCELLED (full refund)
+  
+  Tournaments:
+  Tournament Start → OPEN → ASSIGNED → Match Complete
+  → COMPLETED (admin confirms) → PAID (escrow release)
+  ```
+
+- **Conflict Prevention:**
+  - Referees cannot accept overlapping jobs
+  - Backend validates time conflicts before acceptance
+  - UI shows conflicting jobs with warnings (accept button disabled)
+
+- Referee fee: **RM 40 per referee per tournament match**, **RM 20 per referee per practice session**
 - **Multi-hour booking** is available for hourly facilities (Badminton, Tennis) - users can select up to 2 consecutive hours.
 - Maximum booking duration is **2 hours** per UPM Akademi Sukan policy ("MAKSIMUM 2 JAM").
 - Student prices are **digital booking fees** - facility access is free for UPM students (covered by student fees).
 - Public prices are **full rental rates** from official UPM Akademi Sukan price list.
 
-### **B. Referee Verification Codes & Akademi Sukan Course Alignment**
+### **B. Referee Verification Codes & Badge System**
 
-*Students can only accept referee jobs if their profile has the specific QKS code badge, which corresponds to completing referee certification courses offered by UPM Akademi Sukan.*
+*Students can only accept referee jobs if their profile has the specific badge, which corresponds to completing referee certification courses offered by UPM Akademi Sukan.*
 
-#### **Course Codes & Badges:**
-* **Football:** `QKS2101` → Badge: `VERIFIED_REF_FOOTBALL` (Kursus Pengadil Bola Sepak)
-* **Badminton:** `QKS2102` → Badge: `VERIFIED_REF_BADMINTON` (Kursus Pengadil Badminton)
-* **Tennis:** `QKS2103` → Badge: `VERIFIED_REF_TENNIS` (Kursus Pengadil Tenis)
-* **Futsal:** `QKS2104` → Badge: `VERIFIED_REF_FUTSAL` (Kursus Pengadil Futsal)
+#### **Course Codes & Badges (4 Sports):**
+| Sport | Course Code | Badge Constant | Display Name |
+|---|---|---|---|
+| Football | `QKS2101` | `VERIFIED_REF_FOOTBALL` | Football |
+| Futsal | `QKS2104` | `VERIFIED_REF_FUTSAL` | Futsal |
+| Badminton | `QKS2102` | `VERIFIED_REF_BADMINTON` | Badminton |
+| Tennis | `QKS2103` | `VERIFIED_REF_TENNIS` | Tennis |
+
+#### **Badge System Architecture:**
+
+**Data Storage:**
+- Location: `users.badges` (Firestore array field)
+- Type: `List<String>` containing badge constants
+- Example: `['VERIFIED_REF_FOOTBALL', 'VERIFIED_REF_FUTSAL']`
+
+**Single Source of Truth:**
+- **Class:** `BadgeService` (`lib/services/badge_service.dart`)
+- **Purpose:** Centralized badge validation and management
+- **Methods:**
+  - `availableBadges` - List of all valid badges (4 sports)
+  - `badgeNames` - Display names mapping
+  - `badgeIcons` - Icon mapping (⚽🎸🎾)
+  - `badgeDescriptions` - Badge descriptions
+  - `isCertifiedFor(user, sport)` - Validation method
+
+**Strict 1:1 Mapping Rule:**
+- Every badge must correspond to exactly one `SportType` enum value
+- Every `SportType` must have exactly one corresponding badge
+- This ensures:
+  - Referee jobs can be filtered correctly
+  - Backend access control works properly
+  - No "orphaned" badges or missing certifications
+
+**Badge Validation Flow:**
+```dart
+// 1. User applies for referee certification
+AuthService.applyForReferee(userId, selectedBadges)
+
+// 2. Admin reviews and approves
+BadgeService.setBadgesForUser(userId, approvedBadges)
+
+// 3. System validates before showing jobs
+final sportBadge = BadgeService._getSportBadge(job.sport);
+if (user.badges.contains(sportBadge)) {
+  // Show job to referee
+}
+
+// 4. Backend validates before acceptance
+RefereeService.acceptJob(jobId) {
+  if (!referee.isCertifiedFor(job.sport)) {
+    throw 'Not certified for this sport';
+  }
+}
+```
+
+**Admin Badge Management:**
+- Location: Admin Dashboard → Referees List
+- Features:
+  - View all referees with their certifications
+  - Click referee row to open badge management dialog
+  - Add/remove badges via checkboxes
+  - Changes saved to Firestore immediately
+  - Real-time job filtering updates
+- UI: Fixed overflow issues, displays 4 sports in 2×2 grid
+
+**Referee Job Filtering:**
+- **Available Jobs Tab:**
+  - Shows jobs matching referee's badges
+  - Example: Referee with `VERIFIED_REF_FOOTBALL` sees only football jobs
+  - Empty state: "Get certified for more sports to see more jobs"
+- **Conflict Detection:**
+  - Jobs overlapping with accepted jobs shown but disabled
+  - Warning icon and disabled accept button
+  - Hover tooltip explains conflict
+
+**Course Names (UPM Akademi Sukan):**
+* **QKS2101:** Kursus Pengadil Bola Sepak (Football Referee Course)
+* **QKS2104:** Kursus Pengadil Futsal (Futsal Referee Course)
+* **QKS2102:** Kursus Pengadil Badminton (Badminton Umpire Course)
+* **QKS2103:** Kursus Pengadil Tenis (Tennis Umpire Course)
+
+**Note:** Badge constants use `VERIFIED_REF_*` prefix to distinguish from other badge types (e.g., achievement badges, rank badges).
 
 #### **Certification Process:**
 1. **Course Completion:** Students complete referee certification courses through UPM Akademi Sukan (Akademi Sukan provides professional training and certification courses)
@@ -118,6 +233,237 @@
 
 ---
 
+### **D. Referee System Business Logic (SukanGig)**
+
+#### **D.1. Two Referee Types**
+
+**1. Tournament Referees (Mandatory)**
+- **Trigger:** Automatically created when tournament starts
+- **Status:** Required for all tournament matches
+- **Rate:** RM 40 per match per referee
+- **Payment:** Organizer pays from tournament pool when registration closes
+- **Lifecycle:** Tournament Start → OPEN → ASSIGNED → Match Complete → COMPLETED → PAID
+
+**2. Normal Booking Referees (Optional)**
+- **Trigger:** Student selects "Request Referee" during booking flow
+- **Status:** Optional add-on for practice/friendly matches
+- **Rate:** RM 20 per session per referee
+- **Payment:** Student pays referee fee during booking (held in escrow)
+- **Visibility:** Jobs remain visible until booking `endTime` (not `startTime`)
+  - Allows referees to accept jobs even for ongoing sessions
+  - Provides flexibility for last-minute coverage
+- **Lifecycle:** Payment → OPEN → ASSIGNED → endTime → COMPLETED → PAID
+- **Auto-Cleanup:** System runs cleanup at booking `endTime`:
+  - If referees assigned → job auto-completes, escrow released
+  - If no referees assigned → job cancelled, full referee fee refunded
+- **Key Point:** Booking proceeds regardless of referee availability
+
+#### **D.2. Multi-Referee Logic**
+
+**Referee Requirements by Sport:**
+```dart
+football: 3 referees    // 1 main + 2 linesmen
+futsal: 1 referee       // solo
+badminton: 1 umpire     // solo
+tennis: 1 umpire        // solo (optional)
+```
+
+**Partial Assignment System:**
+- Jobs can be partially fulfilled
+- Example: Football job (3 referees required)
+  - 0/3 referees: Job remains OPEN
+  - 1/3 referees: Job remains OPEN (partially assigned)
+  - 2/3 referees: Job remains OPEN (partially assigned)
+  - 3/3 referees: Job fully assigned (still OPEN until match starts)
+
+**Proportional Payment Algorithm:**
+```dart
+// Calculate referee fee per slot
+feePerReferee = totalRefereeFee / refereesRequired
+
+// On job completion:
+assignedCount = assignedReferees.length
+paymentAmount = assignedCount * feePerReferee
+refundAmount = (refereesRequired - assignedCount) * feePerReferee
+
+// Example: Football (RM 60 total, 3 referees required)
+// Scenario 1: 2 referees assigned
+//   Payment: 2 × RM 20 = RM 40 (to referees)
+//   Refund: 1 × RM 20 = RM 20 (to organizer)
+
+// Scenario 2: 0 referees assigned (auto-cancelled)
+//   Payment: RM 0
+//   Refund: RM 60 (full refund to organizer)
+```
+
+**UI Progress Indicators:**
+- Single referee jobs: "Referee assigned" or "Looking for referee"
+- Multi-referee jobs:
+  - "1/3 referees assigned (2 more needed)"
+  - "2/3 referees assigned (1 more needed)"
+  - "3/3 referees assigned (fully covered)"
+  - In "My Jobs" tab: "You + 2 others" or "You + 1 other (1 more needed)"
+
+#### **D.3. Referee Conflict Prevention**
+
+**Problem:** Referees could accidentally accept overlapping jobs, causing double-booking.
+
+**Solution:** Time overlap detection and validation.
+
+**Overlap Detection Algorithm:**
+```dart
+bool hasTimeConflict(Job newJob, List<Job> existingJobs) {
+  for (final existingJob in existingJobs) {
+    if (newJob.startTime.isBefore(existingJob.endTime) &&
+        newJob.endTime.isAfter(existingJob.startTime)) {
+      return true; // Jobs overlap
+    }
+  }
+  return false;
+}
+
+// Example conflicts:
+// Existing: 2:00 PM - 4:00 PM
+// New: 3:00 PM - 5:00 PM → CONFLICT (overlaps 3-4 PM)
+// New: 1:00 PM - 2:30 PM → CONFLICT (overlaps 2-2:30 PM)
+// New: 4:00 PM - 6:00 PM → NO CONFLICT (starts when existing ends)
+```
+
+**Backend Validation:**
+- Location: `RefereeService.acceptJob()`
+- Checks: All referee's assigned jobs (status: ASSIGNED, COMPLETED)
+- Action: Throws error if conflict detected
+- Error Message: "You have a conflicting job from [time] to [time]"
+
+**Frontend Indicators:**
+- Conflicting jobs shown in "Available Jobs" tab
+- Visual styling: Warning border/background
+- Accept button: Disabled
+- Warning icon: ⚠️ with tooltip explaining conflict
+- Status badge: "Time Conflict" in orange
+
+**Edge Cases Handled:**
+- Jobs starting exactly when another ends: NO CONFLICT
+- Jobs with same start time: CONFLICT
+- Back-to-back jobs with 0-minute gap: NO CONFLICT
+- Overlapping by even 1 minute: CONFLICT
+
+#### **D.4. Enhanced Referee Dashboard (3-Tab Interface)**
+
+**Tab 1: Available Jobs**
+- **Purpose:** Browse open job opportunities
+- **Filtering:**
+  - Shows only OPEN jobs
+  - Filters by referee's badges (sport certifications)
+  - Hides jobs already accepted by this referee
+  - Shows future jobs and next-day jobs
+  - Marks conflicting jobs (shown but disabled)
+- **Display:**
+  - Job cards with sport, time, location, pay
+  - Multi-referee progress ("2/3 referees needed")
+  - Conflict warning for overlapping jobs
+  - Accept button (disabled for conflicts/uncertified sports)
+- **Empty States:**
+  - No jobs available: "Check back later for new opportunities"
+  - No certifications: "Get certified for sports to see job listings"
+  - All jobs taken: "All available jobs are assigned"
+
+**Tab 2: My Jobs**
+- **Purpose:** Track accepted jobs
+- **Filtering:**
+  - Shows jobs where referee is in `assignedReferees` array
+  - Statuses: ASSIGNED, COMPLETED
+  - Excludes PAID and CANCELLED (moved to History)
+- **Status Classification:**
+  - 🟢 **Upcoming:** Job startTime is in the future
+    - Shows countdown: "Starts in 2 hours" or "Starts tomorrow at 3:00 PM"
+  - 🟡 **In Progress:** Current time is between startTime and endTime
+    - Shows time remaining: "45 minutes remaining"
+  - 🔵 **Recently Ended:** Job completed < 24 hours ago
+    - Shows completion status: "Completed 3 hours ago"
+- **Multi-Referee Display:**
+  - "You + 2 others" (3/3 referees)
+  - "You + 1 other (1 more needed)" (2/3 referees)
+  - "You (2 more needed)" (1/3 referees)
+- **Actions:**
+  - View booking details
+  - QR check-in (when job is active)
+  - Navigate to facility location
+
+**Tab 3: History**
+- **Purpose:** View past job records
+- **Filtering:**
+  - Shows jobs with status: COMPLETED, PAID, CANCELLED
+  - Sorted by completion date (newest first)
+- **Display:**
+  - Job summary with final status
+  - Payment received (for PAID jobs)
+  - Cancellation reason (for CANCELLED jobs)
+  - Merit points earned (+3 per completed job)
+- **Empty State:** "No job history yet. Accept jobs to build your record."
+
+#### **D.5. Badge System Integration**
+
+**Job Visibility Rules:**
+```dart
+// Referee sees job only if:
+1. Job status is OPEN
+2. Referee has required badge for job's sport
+3. Job is not in referee's assignedJobs list
+4. Job startTime is not in the past
+
+// Example:
+Job: Football match (sport: 'FOOTBALL')
+Referee badges: ['VERIFIED_REF_FOOTBALL', 'VERIFIED_REF_FUTSAL']
+Result: Job is visible (✅ has VERIFIED_REF_FOOTBALL)
+
+Job: Tennis match (sport: 'TENNIS')
+Referee badges: ['VERIFIED_REF_FOOTBALL']
+Result: Job is hidden (❌ missing VERIFIED_REF_TENNIS)
+```
+
+**Badge Validation on Job Acceptance:**
+```dart
+// Backend validation in RefereeService.acceptJob()
+final requiredBadge = BadgeService.getSportBadge(job.sport);
+if (!referee.badges.contains(requiredBadge)) {
+  throw 'You are not certified to referee ${job.sport}';
+}
+```
+
+#### **D.6. Escrow Payment Flow**
+
+**For Tournament Matches:**
+```
+1. Tournament created → Organizer pays facility fee
+2. Teams join → Entry fees collected in tournament pool
+3. Registration closes → Referee fee deducted from pool to escrow_vault
+4. Match completed → Admin confirms completion
+5. Escrow released → Referee payment distributed proportionally
+```
+
+**For Normal Bookings:**
+```
+1. Booking created with referee request → Student pays (facility + referee fee)
+2. Referee fee held in escrow_vault
+3. Referee accepts job → Job status: ASSIGNED
+4. Booking endTime reached → Auto-complete job
+5. Escrow released → Assigned referees paid proportionally, unused refunded
+```
+
+**Payment Distribution Example (Football, 3 referees, RM 60 total):**
+- 3 referees assigned: 3 × RM 20 = RM 60 paid, RM 0 refunded
+- 2 referees assigned: 2 × RM 20 = RM 40 paid, RM 20 refunded
+- 1 referee assigned: 1 × RM 20 = RM 20 paid, RM 40 refunded
+- 0 referees assigned: RM 0 paid, RM 60 refunded (job auto-cancelled)
+
+**Firestore Transactions:**
+- All escrow operations use Firestore transactions
+- Ensures atomic updates (no partial payments/refunds)
+- Prevents race conditions and double-payments
+
+---
+
 ## 4. Detailed Database Schema (Firestore)
 
 ### **Collection: `users`**
@@ -133,12 +479,15 @@
 ### **Collection: `facilities`**
 * `id` (string): e.g., `fac_football_padang_a`
 * `name` (string)
+* `description` (string): Detailed facility information aligned with real UPM data
 * `type` (enum): 'SESSION', 'INVENTORY'
 * `sport` (string): 'FOOTBALL', 'FUTSAL', 'BADMINTON', 'TENNIS'
 * `price_student` (double)
 * `price_public` (double)
-* `is_indoor` (bool): Critical for Weather Logic.
+* `is_indoor` (bool): Critical for Weather Logic (Futsal is outdoor)
+* `imageUrl` (string): Asset path to facility image (maps to imageAssetPath in model)
 * `sub_units` (array): e.g., `['Court 1', 'Court 2']` (Only for Inventory type - Badminton, Tennis).
+* `location` (GeoPoint): GPS coordinates for UPM campus facilities
 
 ### **Collection: `bookings`**
 * `booking_id` (string)
@@ -149,14 +498,13 @@
 * `status` (enum): 'PENDING_PAYMENT', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'REFUNDED'
 * `weather_status` (enum): 'CLEAR', 'RAIN_WARNING', 'WASHED_OUT'
 * `total_amount` (double)
-* `is_split_bill` (bool)
 * `selected_sub_unit` (string, optional): e.g., "Court 3".
 * `cancellation_reason` (string, optional): Reason provided when cancelled.
 * `cancelled_at` (timestamp, optional): When cancellation occurred.
 
 ### **Collection: `referee_jobs` (The SukanGig Marketplace)**
 
-*Note: Referee jobs are only created for **tournament matches**, not casual bookings.*
+*Note: Referee jobs are created for **tournament matches** (mandatory) and **normal bookings** (when requested by students).*
 
 * `job_id` (string)
 * `booking_id` (ref): Tournament booking ID
@@ -196,18 +544,16 @@
   4. Booking status updated to `REFUNDED` after refund is processed.
 * **Refund Destination:** All refunds go to `wallet_balance` (SukanPay credits), **NEVER** to external bank accounts.
 * **Referee Job Handling:** If booking has an associated referee job, it's automatically cancelled and status set to `CANCELLED`.
-* **Split Bill Cancellation:** When split bill booking is cancelled, only the organizer's payment is refunded (participants who already paid keep their refund eligibility via their own booking records).
+* **Booking Cancellation:** When booking is cancelled, payment is refunded according to cancellation policy.
 * **Status Flow:** `CONFIRMED/PENDING_PAYMENT` → `CANCELLED` → `REFUNDED` (if eligible)
 
-### **C. The Escrow Payment Flow (Tournaments Only)**
+### **C. The Escrow Payment Flow**
 
-* **Scenario:** Football Tournament Match with Referee (RM50 per match to referee crew).
-* **Transaction Flow:**
-    * Tournament Entry Fee -> Admin Revenue
-    * Referee Fee -> `escrow_vault` (System-held wallet)
-* **Release:** When the Match Status changes to 'COMPLETED', the referee fee moves from `escrow_vault` -> Referee's Wallet.
+**Note:** Escrow is used for ALL referee payments (tournaments and normal bookings). See section **D.6** above for comprehensive escrow payment documentation including multi-referee proportional payments and auto-cleanup logic.
 
-**Note:** Escrow is only used for tournament referee payments. Normal bookings do not have referee fees.
+**Quick Summary:**
+* **Tournaments:** Entry fees → tournament pool → referee fee to escrow → match complete → payment distributed
+* **Normal Bookings:** Booking payment → referee fee to escrow → job complete/cancelled → payment distributed/refunded
 
 ### **C.1. Tournament Financial Model (Prize & Organizer Fee)**
 
@@ -294,20 +640,20 @@
    - *Code Reference:* `DateTimeUtils._isFridayPrayerSlot()`
 
 3. **Customization Options:**
-   - **Toggle:** "Split Bill?" (Yes/No) → Ali selects **Yes** (enables split among participants)
-   - *Note:* Referees are only available for tournaments, not casual bookings
+   - Ali pays the full booking amount directly
+   - *Note:* Referees are mandatory for tournaments and optional for normal bookings when requested
    - *Code Reference:* `BookingFlowScreen._enableSplitBill` toggle
 
 #### **Phase 3: Payment & Confirmation**
 1. **Checkout:** Total is RM5 (Futsal booking fee for student)
-   - Since "Split Bill" is ON, Ali pays his share (split among participants)
+
 
 2. **State Changes:**
    ```
    BookingStatus.PENDING_PAYMENT → PENDING_PARTICIPANTS → CONFIRMED
    ```
 
-3. **Invite System (Split Bill):**
+**
    - App generates shareable link/Team Code (e.g., `TIGER-882`)
    - Ali sends to WhatsApp group
    - Friends click link → Pay their share → Auto-join booking
@@ -341,14 +687,14 @@
 | Feature | Student | Public |
 |---------|---------|--------|
 | Badminton Price | RM 15.00 | RM 20.00 |
-| Split Bill | ✅ Available (Tournaments) | ❌ Disabled |
+| Payment | Direct payment | Direct payment |
 | Hire Referee | ✅ Available | ❌ Disabled |
 | Merit Points | ✅ Earned | ❌ None |
 
 #### **Flow:**
 1. **Login:** `tan@gmail.com` → System assigns **PUBLIC Role**
 2. **Booking:** Sees public pricing (RM 20 vs RM 15)
-3. **Payment:** Must pay full amount (no split bill)
+3. **Payment:** Must pay full amount directly
 4. **No Rewards:** No Merit Points awarded
 
 ---
@@ -554,7 +900,7 @@ CANCELLATION PATH:
 
 *Usage:* A user cannot become a referee unless they upload a transcript containing these specific string codes.
 
-**Important:** Referees are only assigned to **tournament matches**. Normal bookings do not require referees.
+**Important:** Referees are mandatory for **tournament matches** and optionally available for **normal facility bookings** when students request referee assistance for practice or friendly matches.
 
 #### **The Housing Policy**
 - **Code:** `MERIT_KOLEJ`

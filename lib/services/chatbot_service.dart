@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import '../core/constants/app_constants.dart';
 import '../features/auth/data/models/user_model.dart';
@@ -12,6 +11,7 @@ class ChatMessage {
   final bool isUser;
   final DateTime timestamp;
   final MessageType type;
+  final String? userId; // Track which user owns this message
 
   ChatMessage({
     required this.id,
@@ -19,16 +19,12 @@ class ChatMessage {
     required this.isUser,
     required this.timestamp,
     this.type = MessageType.text,
+    this.userId,
   });
 }
 
 /// Message types for different UI rendering
-enum MessageType {
-  text,
-  booking,
-  quickActions,
-  welcome,
-}
+enum MessageType { text, booking, quickActions, welcome }
 
 /// ChatbotService - AI assistant with complete PutraSportHub knowledge
 /// Uses Gemini 1.5 Flash for fast, natural responses
@@ -45,13 +41,18 @@ class ChatbotService {
     UserModel? user,
   }) async {
     if (apiKey == null || apiKey!.isEmpty) {
-      developer.log('PutraBot: No API key, using fallback');
-      return _getSmartResponse(userMessage, user: user, history: conversationHistory);
+      return _getSmartResponse(
+        userMessage,
+        user: user,
+        history: conversationHistory,
+      );
     }
 
     try {
       final systemPrompt = _buildComprehensivePrompt(user);
-      final conversationContext = _buildConversationContext(conversationHistory);
+      final conversationContext = _buildConversationContext(
+        conversationHistory,
+      );
 
       final fullPrompt = '''
 $systemPrompt
@@ -61,68 +62,79 @@ $conversationContext
 User: $userMessage
 Assistant:''';
 
-      developer.log('PutraBot: Calling Gemini API...');
-      
-      final response = await http.post(
-        Uri.parse('$_baseUrl/models/gemini-2.5-flash:generateContent?key=$apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': fullPrompt}
-              ]
-            }
-          ],
-          'generationConfig': {
-            'temperature': 0.9,
-            'topK': 40,
-            'topP': 0.95,
-            'maxOutputTokens': 800,
-          },
-          'safetySettings': [
-            {'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_NONE'},
-            {'category': 'HARM_CATEGORY_HATE_SPEECH', 'threshold': 'BLOCK_NONE'},
-            {'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold': 'BLOCK_NONE'},
-            {'category': 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold': 'BLOCK_NONE'},
-          ],
-        }),
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          developer.log('PutraBot: API timeout');
-          throw Exception('API timeout');
-        },
-      );
-
-      developer.log('PutraBot: Response status ${response.statusCode}');
+      final response = await http
+          .post(
+            Uri.parse(
+              '$_baseUrl/models/gemini-2.5-flash:generateContent?key=$apiKey',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'contents': [
+                {
+                  'parts': [
+                    {'text': fullPrompt},
+                  ],
+                },
+              ],
+              'generationConfig': {
+                'temperature': 0.9,
+                'topK': 40,
+                'topP': 0.95,
+                'maxOutputTokens': 800,
+              },
+              'safetySettings': [
+                {
+                  'category': 'HARM_CATEGORY_HARASSMENT',
+                  'threshold': 'BLOCK_NONE',
+                },
+                {
+                  'category': 'HARM_CATEGORY_HATE_SPEECH',
+                  'threshold': 'BLOCK_NONE',
+                },
+                {
+                  'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                  'threshold': 'BLOCK_NONE',
+                },
+                {
+                  'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                  'threshold': 'BLOCK_NONE',
+                },
+              ],
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw Exception('API timeout');
+            },
+          );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final candidates = data['candidates'] as List?;
-        
+
         if (candidates != null && candidates.isNotEmpty) {
           final content = candidates[0]['content'];
           final parts = content['parts'] as List?;
           if (parts != null && parts.isNotEmpty) {
             final text = parts[0]['text'] as String;
-            developer.log('PutraBot: Got response from Gemini');
             return text.trim();
           }
         }
-        
-        // Check for blocked content
-        if (data['promptFeedback']?['blockReason'] != null) {
-          developer.log('PutraBot: Content blocked - ${data['promptFeedback']['blockReason']}');
-        }
-      } else {
-        developer.log('PutraBot: API error ${response.statusCode} - ${response.body}');
       }
 
-      return _getSmartResponse(userMessage, user: user, history: conversationHistory);
+      return _getSmartResponse(
+        userMessage,
+        user: user,
+        history: conversationHistory,
+      );
     } catch (e) {
-      developer.log('PutraBot: Exception - $e');
-      return _getSmartResponse(userMessage, user: user, history: conversationHistory);
+      // Non-critical: API failure falls back to smart response
+      return _getSmartResponse(
+        userMessage,
+        user: user,
+        history: conversationHistory,
+      );
     }
   }
 
@@ -130,7 +142,7 @@ Assistant:''';
   String _buildComprehensivePrompt(UserModel? user) {
     final userName = user?.displayName.split(' ').first ?? '';
     final userRole = _getUserRole(user);
-    
+
     return '''
 You are PutraBot, a friendly AI assistant for PutraSportHub - UPM's campus sports booking app.
 
@@ -179,9 +191,7 @@ HOURS: 8AM-10PM daily, closed Friday 12:15-2:45PM for prayers
 
 WALLET: Profile → Wallet → Top Up (min RM10)
 
-SPLIT BILL: Toggle on when booking, share team code with friends, everyone pays their share. Max participants: Football 22, Futsal 12, Badminton 8, Tennis 4
-
-TOURNAMENTS: Tournaments tab → browse/create/join with code (Students only). Formats: 8-Team Knockout or 4-Team Group Stage
+TOURNAMENTS: Tournaments tab → browse/create/join with code (Students only). Formats: 8-Team Knockout or 4-Team Knockout
 
 SUKANGIG: Profile → Become Referee → get certified → SukanGig tab → accept jobs → earn RM20-40/match + 3 merit points
 
@@ -212,9 +222,10 @@ ${_getRoleSpecificInstructions(user)}
   String _getRoleSpecificInstructions(UserModel? user) {
     final isAdmin = user?.role == UserRole.admin;
     final isPublic = user?.role == UserRole.public;
-    final isStudentReferee = user?.isStudent == true && (user?.isVerifiedReferee ?? false);
+    final isStudentReferee =
+        user?.isStudent == true && (user?.isVerifiedReferee ?? false);
     final isStudent = user?.isStudent == true && !isStudentReferee;
-    
+
     if (isAdmin) {
       return '''
 === ADMIN ROLE ===
@@ -229,45 +240,45 @@ You are helping an ADMIN user. Focus ONLY on admin functionality:
 - Analytics: View system analytics and reports (/admin/analytics)
 
 IMPORTANT: 
-- DO NOT discuss user-facing features (booking facilities, tournaments, split bill, etc.)
+- DO NOT discuss user-facing features (booking facilities, tournaments, etc.)
 - Focus on admin tools, system management, and data oversight
 - Redirect questions about user features: "That's for users - use the admin screens to view their data"
 ''';
     }
-    
+
     if (isPublic) {
       return '''
 === PUBLIC USER ===
 Access: Book facilities, use SukanPay wallet
-Cannot access: Tournaments, Split Bill, SukanGig, Merit points (student-only features)
+Cannot access: Tournaments, SukanGig, Merit points (student-only features)
 When asked about student features, say: "That's a student feature! You can still book facilities and use SukanPay."
 ''';
     }
-    
+
     if (isStudentReferee) {
       return '''
 === STUDENT REFEREE ROLE ===
 Full student access PLUS referee features:
-- Book facilities (student rates), Split Bill, Tournaments (join/create), Merit points
+- Book facilities (student rates), Tournaments (join/create), Merit points
 - SukanGig: Accept referee jobs, earn RM20-40/match + 3 merit points
 - Profile → Become Referee: Already certified (can access SukanGig tab)
 - Can switch between Student mode and Referee mode
 - Can earn merit from: Playing tournaments (+2), Refereeing (+3), Organizing (+5)
 ''';
     }
-    
+
     if (isStudent) {
       return '''
 === STUDENT ROLE ===
 Full student access:
-- Book facilities (student rates), Split Bill, Tournaments (join/create), Merit points
+- Book facilities (student rates), Tournaments (join/create), Merit points
 - Cannot access SukanGig (need to become a verified referee first)
 - Profile → Become Referee: Get certified to access referee jobs
 - Can earn merit from: Playing tournaments (+2), Organizing (+5)
 - NOTE: Normal bookings do NOT award merit points - only tournament participation does
 ''';
     }
-    
+
     return '';
   }
 
@@ -275,16 +286,23 @@ Full student access:
   String _buildConversationContext(List<ChatMessage> history) {
     if (history.isEmpty) return '';
 
-    final recent = history.length > 6 ? history.sublist(history.length - 6) : history;
-    final context = recent.map((msg) {
-      return msg.isUser ? 'User: ${msg.content}' : 'Bot: ${msg.content}';
-    }).join('\n');
+    final recent =
+        history.length > 6 ? history.sublist(history.length - 6) : history;
+    final context = recent
+        .map((msg) {
+          return msg.isUser ? 'User: ${msg.content}' : 'Bot: ${msg.content}';
+        })
+        .join('\n');
 
     return 'Recent chat:\n$context\n';
   }
 
   /// Smart fallback with improved matching
-  String _getSmartResponse(String userMessage, {UserModel? user, List<ChatMessage>? history}) {
+  String _getSmartResponse(
+    String userMessage, {
+    UserModel? user,
+    List<ChatMessage>? history,
+  }) {
     final msg = _cleanMessage(userMessage);
     final isAdmin = user?.role == UserRole.admin;
     final isPublic = user?.role == UserRole.public;
@@ -293,25 +311,52 @@ Full student access:
 
     // === ADMIN-SPECIFIC RESPONSES (Check first for admins) ===
     if (isAdmin) {
-      if (_matchesIntent(msg, ['book', 'booking', 'reserve', 'tempah']) && !_matchesIntent(msg, ['view', 'see', 'check', 'manage', 'list'])) {
+      if (_matchesIntent(msg, ['book', 'booking', 'reserve', 'tempah']) &&
+          !_matchesIntent(msg, ['view', 'see', 'check', 'manage', 'list'])) {
         return 'To manage bookings, go to Admin Dashboard → Bookings or navigate to /admin/bookings to view all bookings.';
       }
       if (_matchesIntent(msg, ['user', 'users', 'account', 'accounts'])) {
-        if (_matchesIntent(msg, ['view', 'see', 'check', 'manage', 'list', 'all'])) {
+        if (_matchesIntent(msg, [
+          'view',
+          'see',
+          'check',
+          'manage',
+          'list',
+          'all',
+        ])) {
           return 'Go to Admin Dashboard → Users or navigate to /admin/users to view and manage all user accounts.';
         }
         return 'User management is in Admin Dashboard → Users. View all users, check details, and manage accounts there.';
       }
       if (_matchesIntent(msg, ['tournament', 'tournaments', 'competition'])) {
-        if (_matchesIntent(msg, ['view', 'see', 'check', 'manage', 'list', 'all'])) {
+        if (_matchesIntent(msg, [
+          'view',
+          'see',
+          'check',
+          'manage',
+          'list',
+          'all',
+        ])) {
           return 'Go to Admin Dashboard → Tournaments or navigate to /admin/tournaments to view all tournaments and check details.';
         }
         return 'Tournament management is in Admin Dashboard → Tournaments. View all tournaments and check details there.';
       }
-      if (_matchesIntent(msg, ['revenue', 'money', 'income', 'payment', 'transaction'])) {
+      if (_matchesIntent(msg, [
+        'revenue',
+        'money',
+        'income',
+        'payment',
+        'transaction',
+      ])) {
         return 'View revenue and transactions in Admin Dashboard → Analytics or /admin/transactions. Check stats in the Overview section.';
       }
-      if (_matchesIntent(msg, ['dashboard', 'admin', 'overview', 'stats', 'statistics'])) {
+      if (_matchesIntent(msg, [
+        'dashboard',
+        'admin',
+        'overview',
+        'stats',
+        'statistics',
+      ])) {
         return 'Admin Dashboard shows overview stats: Total Users, Revenue, Active Bookings, and Active Tournaments. Quick access to all management screens!';
       }
       if (_matchesIntent(msg, ['facility', 'facilities', 'court', 'field'])) {
@@ -346,13 +391,19 @@ Full student access:
 
     // === GREETINGS (only if pure greeting, no question) ===
     if (_isPureGreeting(msg)) {
-      return userName.isNotEmpty 
-        ? 'Hey $userName! 👋 What can I help you with?' 
-        : 'Hey! 👋 Ask me anything about PutraSportHub!';
+      return userName.isNotEmpty
+          ? 'Hey $userName! 👋 What can I help you with?'
+          : 'Hey! 👋 Ask me anything about PutraSportHub!';
     }
 
     // === WALLET ===
-    if (_matchesIntent(msg, ['wallet', 'sukanpay', 'duit', 'balance', 'baki'])) {
+    if (_matchesIntent(msg, [
+      'wallet',
+      'sukanpay',
+      'duit',
+      'balance',
+      'baki',
+    ])) {
       if (_matchesIntent(msg, ['top up', 'topup', 'add', 'tambah'])) {
         return 'Go to Profile → Wallet → Top Up button. Min RM10, balance updates instantly!';
       }
@@ -363,8 +414,14 @@ Full student access:
     }
 
     // === SPORTS / FACILITIES ===
-    if (_matchesIntent(msg, ['sport', 'sukan', 'facility', 'what can', 'available'])) {
-      return 'We have Football (6 fields), Futsal (indoor/outdoor), Badminton (8 courts), and Tennis (14 courts). All on the Home screen!';
+    if (_matchesIntent(msg, [
+      'sport',
+      'sukan',
+      'facility',
+      'what can',
+      'available',
+    ])) {
+      return 'We have Football (6 fields), Futsal (1 court), Badminton (8 courts), and Tennis (14 courts). All on the Home screen!';
     }
 
     // === PRICES ===
@@ -372,15 +429,11 @@ Full student access:
       return _getPriceResponse(user);
     }
 
-    // === SPLIT BILL ===
-    if (_matchesIntent(msg, ['split', 'share', 'kongsi', 'friend', 'kawan'])) {
-      if (isPublic) return 'Split bill is for students only! You can still book normally.';
-      return 'When booking, toggle Split Bill on - you\'ll get a team code to share. Everyone pays their part, then booking confirms! Max participants: Football 22, Futsal 12, Badminton 8, Tennis 4.';
-    }
-
     // === TOURNAMENT ===
     if (_matchesIntent(msg, ['tournament', 'pertandingan', 'competition'])) {
-      if (isPublic) return 'Tournaments are for UPM students only. You can still book facilities for your own games!';
+      if (isPublic) {
+        return 'Tournaments are for UPM students only. You can still book facilities for your own games!';
+      }
       if (_matchesIntent(msg, ['create', 'buat', 'organize'])) {
         return 'Go to Tournaments tab → Create Tournament. Pick sport, format, dates, entry fee, then share the code!';
       }
@@ -391,21 +444,33 @@ Full student access:
     }
 
     // === REFEREE / SUKANGIG ===
-    if (_matchesIntent(msg, ['referee', 'wasit', 'sukangig', 'gig', 'officiate'])) {
-      if (isPublic) return 'SukanGig is for UPM student referees. You can still book facilities with referees included!';
+    if (_matchesIntent(msg, [
+      'referee',
+      'wasit',
+      'sukangig',
+      'gig',
+      'officiate',
+    ])) {
+      if (isPublic) {
+        return 'SukanGig is for UPM student referees. You can still book facilities with referees included!';
+      }
       if (_matchesIntent(msg, ['become', 'jadi', 'apply', 'how to be'])) {
         return 'Profile → Become Referee → select your sport cert. Once verified, SukanGig tab appears with job listings!';
       }
       if (_matchesIntent(msg, ['earn', 'money', 'gaji', 'bayar'])) {
         return 'Referees earn RM20-40 per match plus 3 merit points! Payment held in escrow, released after the game.';
       }
-      if (isReferee) return 'Check SukanGig tab for available jobs. Accept, show up, QR check-in, and get paid!';
+      if (isReferee) {
+        return 'Check SukanGig tab for available jobs. Accept, show up, QR check-in, and get paid!';
+      }
       return 'Want to earn as a referee? Go to Profile → Become Referee to get started!';
     }
 
     // === MERIT POINTS ===
     if (_matchesIntent(msg, ['merit', 'point', 'gp08', 'housing', 'kolej'])) {
-      if (isPublic) return 'Merit points are for UPM students - part of the housing system. Anything else I can help with?';
+      if (isPublic) {
+        return 'Merit points are for UPM students - part of the housing system. Anything else I can help with?';
+      }
       if (_matchesIntent(msg, ['earn', 'dapat', 'how'])) {
         return 'Playing in tournaments +2 points (NOT normal bookings!), refereeing +3, organizing +5. Max 15 per semester!';
       }
@@ -427,19 +492,39 @@ Full student access:
 
     // === LOCATION / WHERE ===
     if (_matchesIntent(msg, ['where', 'mana', 'find', 'cari', 'location'])) {
-      if (_matchesIntent(msg, ['book'])) return 'Book from the Home screen - tap any sport card!';
-      if (_matchesIntent(msg, ['wallet'])) return 'Wallet is in Profile tab → Wallet!';
-      if (_matchesIntent(msg, ['tournament'])) return isPublic ? 'Tournaments are student-only!' : 'Tournaments tab at the bottom!';
-      if (_matchesIntent(msg, ['merit'])) return isPublic ? 'Merit is for students only!' : 'Merit tab in the navigation!';
-      if (_matchesIntent(msg, ['profile', 'setting'])) return 'Profile is the last tab at the bottom!';
+      if (_matchesIntent(msg, ['book'])) {
+        return 'Book from the Home screen - tap any sport card!';
+      }
+      if (_matchesIntent(msg, ['wallet'])) {
+        return 'Wallet is in Profile tab → Wallet!';
+      }
+      if (_matchesIntent(msg, ['tournament'])) {
+        return isPublic
+            ? 'Tournaments are student-only!'
+            : 'Tournaments tab at the bottom!';
+      }
+      if (_matchesIntent(msg, ['merit'])) {
+        return isPublic
+            ? 'Merit is for students only!'
+            : 'Merit tab in the navigation!';
+      }
+      if (_matchesIntent(msg, ['profile', 'setting'])) {
+        return 'Profile is the last tab at the bottom!';
+      }
     }
 
     // === HELP ===
     if (_matchesIntent(msg, ['help', 'tolong', 'what can you'])) {
-      if (isAdmin) return 'I can help with admin tools: User/Booking/Tournament management, Facilities, Referees, Transactions, and Analytics. What do you need?';
-      if (isPublic) return 'I can help with booking facilities, wallet stuff, or navigating the app. What do you need?';
-      if (isReferee) return 'I can help with booking facilities, tournaments, SukanGig referee jobs, merit points, and more! What do you need?';
-      return 'I know everything about PutraSportHub! Booking, tournaments, split bill, merit points - just ask!';
+      if (isAdmin) {
+        return 'I can help with admin tools: User/Booking/Tournament management, Facilities, Referees, Transactions, and Analytics. What do you need?';
+      }
+      if (isPublic) {
+        return 'I can help with booking facilities, wallet stuff, or navigating the app. What do you need?';
+      }
+      if (isReferee) {
+        return 'I can help with booking facilities, tournaments, SukanGig referee jobs, merit points, and more! What do you need?';
+      }
+      return 'I know everything about PutraSportHub! Booking, tournaments, merit points - just ask!';
     }
 
     // === THANKS ===
@@ -449,22 +534,31 @@ Full student access:
 
     // === BYE ===
     if (_matchesIntent(msg, ['bye', 'goodbye', 'later', 'jumpa'])) {
-      return isAdmin ? 'See you! 👋' : 'See you! 👋 Enjoy your sports activities!';
+      return isAdmin
+          ? 'See you! 👋'
+          : 'See you! 👋 Enjoy your sports activities!';
     }
 
     // === DEFAULT ===
-    if (isAdmin) return 'Use the Admin Dashboard to manage users, bookings, tournaments, facilities, referees, transactions, and view analytics. What do you need help with?';
-    if (isPublic) return 'I can help with booking facilities or wallet stuff. What do you want to know?';
-    if (isReferee) return 'Ask me about booking, tournaments, SukanGig referee jobs, merit points, or anything about the app!';
-    return 'Ask me about booking, tournaments, split bill, merit points, or anything about the app!';
+    if (isAdmin) {
+      return 'Use the Admin Dashboard to manage users, bookings, tournaments, facilities, referees, transactions, and view analytics. What do you need help with?';
+    }
+    if (isPublic) {
+      return 'I can help with booking facilities or wallet stuff. What do you want to know?';
+    }
+    if (isReferee) {
+      return 'Ask me about booking, tournaments, SukanGig referee jobs, merit points, or anything about the app!';
+    }
+    return 'Ask me about booking, tournaments, merit points, or anything about the app!';
   }
 
   /// Clean message for better matching
   String _cleanMessage(String msg) {
-    return msg.toLowerCase()
-      .replaceAll(RegExp(r'[^\w\s]'), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+    return msg
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   /// Check if message matches intent (more flexible than containsAny)
@@ -474,9 +568,29 @@ Full student access:
 
   /// Check if it's a pure greeting (no question attached)
   bool _isPureGreeting(String msg) {
-    final greetings = ['hello', 'hi', 'hey', 'hai', 'helo', 'yo', 'sup', 'salam', 'assalamualaikum'];
+    final greetings = [
+      'hello',
+      'hi',
+      'hey',
+      'hai',
+      'helo',
+      'yo',
+      'sup',
+      'salam',
+      'assalamualaikum',
+    ];
     final hasGreeting = greetings.any((g) => msg.contains(g));
-    final hasQuestion = _matchesIntent(msg, ['how', 'where', 'what', 'when', 'why', 'can', 'do', 'is', '?']);
+    final hasQuestion = _matchesIntent(msg, [
+      'how',
+      'where',
+      'what',
+      'when',
+      'why',
+      'can',
+      'do',
+      'is',
+      '?',
+    ]);
     return hasGreeting && !hasQuestion && msg.split(' ').length < 5;
   }
 
@@ -507,26 +621,44 @@ Full student access:
     final isPublic = user?.role == UserRole.public;
     final isAdmin = user?.role == UserRole.admin;
 
-    if (isAdmin) return 'Hey${name.isNotEmpty ? ' $name' : ''}! 👋 Need help with admin stuff?';
-    if (isReferee) return 'Hey $name! 👋 Looking for gigs or need help with something?';
-    if (isPublic) return 'Welcome${name.isNotEmpty ? ' $name' : ''}! 👋 I can help you book facilities or manage your wallet.';
+    if (isAdmin) {
+      return 'Hey${name.isNotEmpty ? ' $name' : ''}! 👋 Need help with admin stuff?';
+    }
+    if (isReferee) {
+      return 'Hey $name! 👋 Looking for gigs or need help with something?';
+    }
+    if (isPublic) {
+      return 'Welcome${name.isNotEmpty ? ' $name' : ''}! 👋 I can help you book facilities or manage your wallet.';
+    }
     return 'Hey${name.isNotEmpty ? ' $name' : ''}! 👋 Ask me anything about booking, tournaments, or the app!';
   }
 
   /// Parse booking intent - only for clear requests
-  BookingIntent? parseBookingIntent(String userMessage, List<ChatMessage> history) {
+  BookingIntent? parseBookingIntent(
+    String userMessage,
+    List<ChatMessage> history,
+  ) {
     final msg = userMessage.toLowerCase();
-    
+
     // Don't trigger for questions
-    if (_matchesIntent(msg, ['how', 'where', 'what', '?', 'explain', 'tell'])) return null;
-    
+    if (_matchesIntent(msg, ['how', 'where', 'what', '?', 'explain', 'tell'])) {
+      return null;
+    }
+
     // Only trigger for clear booking requests
     final hasIntent = _matchesIntent(msg, [
-      'i want to book', 'i wanna book', 'book me', 'book a', 
-      'reserve a', 'nak book', 'want book', 'need to book',
-      'lets book', 'tolong book'
+      'i want to book',
+      'i wanna book',
+      'book me',
+      'book a',
+      'reserve a',
+      'nak book',
+      'want book',
+      'need to book',
+      'lets book',
+      'tolong book',
     ]);
-    
+
     if (!hasIntent) return null;
 
     SportType? sport;
@@ -556,7 +688,11 @@ Full student access:
   }
 
   /// Booking response
-  String getBookingAssistantResponse(BookingIntent intent, List<FacilityModel>? facilities, UserModel? user) {
+  String getBookingAssistantResponse(
+    BookingIntent intent,
+    List<FacilityModel>? facilities,
+    UserModel? user,
+  ) {
     if (intent.sport == null) {
       return 'Which sport - football, futsal, badminton, or tennis?';
     }
@@ -569,13 +705,17 @@ Full student access:
     final isStudent = user?.isStudent ?? false;
     final price = isStudent ? facility.priceStudent : facility.pricePublic;
 
-    var response = '${facility.name} for ${intent.sport!.displayName} - RM${price.toStringAsFixed(0)}${isStudent ? ' (student rate)' : ''}.';
-    
+    var response =
+        '${facility.name} for ${intent.sport!.displayName} - RM${price.toStringAsFixed(0)}${isStudent ? ' (student rate)' : ''}.';
+
     if (intent.preferredDate != null) {
-      final day = intent.preferredDate!.day == DateTime.now().day ? 'today' : 'tomorrow';
+      final day =
+          intent.preferredDate!.day == DateTime.now().day
+              ? 'today'
+              : 'tomorrow';
       response += ' For $day?';
     }
-    
+
     response += ' Tap below to continue!';
     return response;
   }

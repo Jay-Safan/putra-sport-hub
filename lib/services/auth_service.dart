@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../core/constants/app_constants.dart';
+import '../core/utils/error_handler.dart';
 import '../core/utils/retry_utils.dart';
 import '../features/auth/data/models/user_model.dart';
 
@@ -10,11 +11,9 @@ class AuthService {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
 
-  AuthService({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Get current Firebase user
   User? get currentUser => _auth.currentUser;
@@ -39,19 +38,20 @@ class AuthService {
   }) async {
     try {
       final credential = await RetryUtils.retry(
-        operation: () => _auth.signInWithEmailAndPassword(
-          email: email.trim(),
-          password: password,
-        ),
+        operation:
+            () => _auth.signInWithEmailAndPassword(
+              email: email.trim(),
+              password: password,
+            ),
         config: RetryConfig.network,
       );
 
       if (credential.user != null) {
         final firebaseUid = credential.user!.uid;
-        
+
         // Check if user document exists in Firestore
         final userModel = await getUserModel(firebaseUid);
-        
+
         if (userModel == null) {
           // User must sign up first - reject login if user document doesn't exist
           // Sign out the Firebase Auth user since we're rejecting the login
@@ -60,25 +60,30 @@ class AuthService {
             await _auth.signOut();
           });
           return AuthResult.failure(
-            'Account not found. Please sign up first to create your account, then try logging in again.'
+            'Account not found. Please sign up first to create your account, then try logging in again.',
           );
         }
-        
+
         // Update last login
         await _updateLastLogin(firebaseUid);
 
         return AuthResult.success(credential.user!, userModel);
       }
 
-      return AuthResult.failure('Unable to sign in. Please check your credentials and try again.');
+      return AuthResult.failure(
+        'Unable to sign in. Please check your credentials and try again.',
+      );
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(_getAuthErrorMessage(e.code));
     } catch (e) {
-      debugPrint('❌ Sign in error: $e');
-      return AuthResult.failure('Something went wrong. Please try again later.');
+      return AuthResult.failure(
+        ErrorHandler.getUserFriendlyErrorMessage(
+          e,
+          defaultMessage: 'Something went wrong. Please try again later.',
+        ),
+      );
     }
   }
-
 
   /// Register with email and password
   /// Handles existing Auth accounts by completing their Firestore setup
@@ -89,10 +94,11 @@ class AuthService {
   }) async {
     try {
       final credential = await RetryUtils.retry(
-        operation: () => _auth.createUserWithEmailAndPassword(
-          email: email.trim(),
-          password: password,
-        ),
+        operation:
+            () => _auth.createUserWithEmailAndPassword(
+              email: email.trim(),
+              password: password,
+            ),
         config: RetryConfig.network,
       );
 
@@ -127,12 +133,12 @@ class AuthService {
         return AuthResult.success(credential.user!, userModel);
       }
 
-      return AuthResult.failure('Unable to create your account. Please try again.');
+      return AuthResult.failure(
+        'Unable to create your account. Please try again.',
+      );
     } on FirebaseAuthException catch (e) {
-      debugPrint('🔍 Registration FirebaseAuthException: ${e.code} - ${e.message}');
       // Handle email-already-in-use: Account exists in Auth but might not have Firestore doc
       if (e.code == 'email-already-in-use') {
-        debugPrint('  → Account exists in Auth, attempting to complete setup...');
         return await _handleExistingAuthAccount(
           email: email.trim(),
           password: password,
@@ -141,7 +147,9 @@ class AuthService {
       }
       return AuthResult.failure(_getAuthErrorMessage(e.code));
     } catch (e) {
-      return AuthResult.failure('Something went wrong during registration. Please try again.');
+      return AuthResult.failure(
+        'Something went wrong during registration. Please try again.',
+      );
     }
   }
 
@@ -153,7 +161,7 @@ class AuthService {
     required String displayName,
   }) async {
     debugPrint('🔍 Handling existing Auth account: $email');
-    
+
     try {
       // Try to sign in to verify password and get UID
       debugPrint('  → Attempting sign in to verify password...');
@@ -165,7 +173,7 @@ class AuthService {
       if (signInCredential.user == null) {
         debugPrint('  ❌ Sign in succeeded but user is null');
         return AuthResult.failure(
-          'An account already exists with this email. The password you entered is incorrect. Please use "Forgot Password" to reset it or try signing in with the correct password.'
+          'An account already exists with this email. The password you entered is incorrect. Please use "Forgot Password" to reset it or try signing in with the correct password.',
         );
       }
 
@@ -181,11 +189,13 @@ class AuthService {
         debugPrint('  ℹ️ Firestore document exists - account is complete');
         await _auth.signOut(); // Sign out since we were just checking
         return AuthResult.failure(
-          'An account already exists with this email. Please sign in instead.'
+          'An account already exists with this email. Please sign in instead.',
         );
       }
 
-      debugPrint('  ℹ️ No Firestore document found - completing account setup...');
+      debugPrint(
+        '  ℹ️ No Firestore document found - completing account setup...',
+      );
 
       // Firestore document doesn't exist - complete the account setup
       // Update display name if different
@@ -217,8 +227,6 @@ class AuthService {
       // Return success - user is now signed in and has Firestore document
       return AuthResult.success(signInCredential.user!, userModel);
     } on FirebaseAuthException catch (e) {
-      debugPrint('  ❌ FirebaseAuthException: ${e.code} - ${e.message}');
-      
       // Check if Firestore document exists even if password is wrong
       // This helps determine if account is complete or needs setup
       bool firestoreDocExists = false;
@@ -230,11 +238,12 @@ class AuthService {
         if (signInMethods.isNotEmpty) {
           // Email exists in Auth - now check Firestore
           // We can't get UID without signing in, so we'll check by email
-          final userQuery = await _firestore
-              .collection(AppConstants.usersCollection)
-              .where('email', isEqualTo: email)
-              .limit(1)
-              .get();
+          final userQuery =
+              await _firestore
+                  .collection(AppConstants.usersCollection)
+                  .where('email', isEqualTo: email)
+                  .limit(1)
+                  .get();
           firestoreDocExists = userQuery.docs.isNotEmpty;
           if (firestoreDocExists) {
             debugPrint('  ℹ️ Firestore document exists - account is complete');
@@ -245,47 +254,51 @@ class AuthService {
       } catch (checkError) {
         debugPrint('  ⚠️ Could not check Firestore status: $checkError');
       }
-      
+
       // Wrong password or invalid credential
       if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
         if (firestoreDocExists) {
           // Account is complete - just wrong password
           return AuthResult.failure(
-            'An account already exists with this email, but the password is incorrect. Please use "Forgot Password" on the login page to reset your password, or sign in with the correct password.'
+            'An account already exists with this email, but the password is incorrect. Please use "Forgot Password" on the login page to reset your password, or sign in with the correct password.',
           );
         } else {
           // Account exists in Auth but not in Firestore - automatically send password reset
           try {
-            debugPrint('  → Sending password reset email to complete account setup...');
+            debugPrint(
+              '  → Sending password reset email to complete account setup...',
+            );
             await _auth.sendPasswordResetEmail(email: email);
             debugPrint('  ✅ Password reset email sent');
             return AuthResult.failure(
-              'An account exists with this email, but the password doesn\'t match. A password reset email has been sent to $email. Please check your email, reset your password, then come back and try signing in to complete your account setup.'
+              'An account exists with this email, but the password doesn\'t match. A password reset email has been sent to $email. Please check your email, reset your password, then come back and try signing in to complete your account setup.',
             );
           } catch (resetError) {
-            debugPrint('  ⚠️ Failed to send password reset: $resetError');
+            // Failed to send password reset - guide user to manual reset
             return AuthResult.failure(
-              'An account exists with this email, but the password is incorrect. Please go to the login page and use "Forgot Password" to reset it. After resetting, you can sign in to complete your account setup.'
+              'An account exists with this email, but the password is incorrect. Please go to the login page and use "Forgot Password" to reset it. After resetting, you can sign in to complete your account setup.',
             );
           }
         }
       } else if (e.code == 'user-disabled') {
         return AuthResult.failure(
-          'This account has been disabled. Please contact support for assistance.'
+          'This account has been disabled. Please contact support for assistance.',
         );
       } else if (e.code == 'too-many-requests') {
         return AuthResult.failure(
-          'Too many attempts. Please wait a few minutes and try again.'
+          'Too many attempts. Please wait a few minutes and try again.',
         );
       }
       return AuthResult.failure(
-        'An account already exists with this email. Error: ${e.code}. Please sign in instead, or use "Forgot Password" to reset your password.'
+        'An account already exists with this email. Error: ${e.code}. Please sign in instead, or use "Forgot Password" to reset your password.',
       );
-    } catch (e, stackTrace) {
-      debugPrint('  ❌ Unexpected error handling existing auth account: $e');
-      debugPrint('  Stack trace: $stackTrace');
+    } catch (e) {
       return AuthResult.failure(
-        'An account already exists with this email. Please sign in instead.'
+        ErrorHandler.getUserFriendlyErrorMessage(
+          e,
+          defaultMessage:
+              'An account already exists with this email. Please sign in instead.',
+        ),
       );
     }
   }
@@ -303,17 +316,20 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(_getAuthErrorMessage(e.code));
     } catch (e) {
-      return AuthResult.failure('Unable to send password reset email. Please try again.');
+      return AuthResult.failure(
+        'Unable to send password reset email. Please try again.',
+      );
     }
   }
 
   /// Get user model from Firestore
   Future<UserModel?> getUserModel(String uid) async {
     try {
-      final doc = await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(uid)
-          .get();
+      final doc =
+          await _firestore
+              .collection(AppConstants.usersCollection)
+              .doc(uid)
+              .get();
 
       if (doc.exists) {
         return UserModel.fromFirestore(doc);
@@ -340,16 +356,12 @@ class AuthService {
     required UserMode mode,
   }) async {
     try {
-      await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(uid)
-          .update({
-        'preferredMode': mode.code,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _firestore.collection(AppConstants.usersCollection).doc(uid).update(
+        {'preferredMode': mode.code, 'updatedAt': FieldValue.serverTimestamp()},
+      );
       return true;
     } catch (e) {
-      debugPrint('Failed to save preferred mode: $e');
+      // Failed to save preferred mode - non-critical
       return false;
     }
   }
@@ -408,12 +420,11 @@ class AuthService {
           return false; // Invalid course code
       }
 
-      await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(uid)
-          .update({
-        'badges': FieldValue.arrayUnion([badge]),
-      });
+      await _firestore.collection(AppConstants.usersCollection).doc(uid).update(
+        {
+          'badges': FieldValue.arrayUnion([badge]),
+        },
+      );
 
       return true;
     } catch (e) {
@@ -423,9 +434,7 @@ class AuthService {
 
   /// Grant all referee badges to a user (Admin function)
   /// Adds all four referee certifications: Football, Badminton, Tennis, Futsal
-  Future<bool> grantAllRefereeBadges({
-    required String uid,
-  }) async {
+  Future<bool> grantAllRefereeBadges({required String uid}) async {
     try {
       final allBadges = [
         AppConstants.badgeRefFootball,
@@ -434,17 +443,13 @@ class AuthService {
         AppConstants.badgeRefFutsal,
       ];
 
-      await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(uid)
-          .update({
-        'badges': FieldValue.arrayUnion(allBadges),
-      });
+      await _firestore.collection(AppConstants.usersCollection).doc(uid).update(
+        {'badges': FieldValue.arrayUnion(allBadges)},
+      );
 
-      debugPrint('✅ Granted all referee badges to user: $uid');
       return true;
     } catch (e) {
-      debugPrint('❌ Error granting all referee badges: $e');
+      // Failed to grant referee badges - non-critical
       return false;
     }
   }
@@ -452,10 +457,9 @@ class AuthService {
   /// Update last login timestamp
   Future<void> _updateLastLogin(String uid) async {
     try {
-      await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(uid)
-          .update({'lastLoginAt': Timestamp.now()});
+      await _firestore.collection(AppConstants.usersCollection).doc(uid).update(
+        {'lastLoginAt': Timestamp.now()},
+      );
     } catch (_) {}
   }
 
@@ -463,27 +467,30 @@ class AuthService {
   /// This preserves seeded balances for test accounts
   Future<void> _ensureWalletExists(String uid) async {
     try {
-      final doc = await _firestore
-          .collection(AppConstants.walletsCollection)
-          .doc(uid)
-          .get();
-      
+      final doc =
+          await _firestore
+              .collection(AppConstants.walletsCollection)
+              .doc(uid)
+              .get();
+
       if (!doc.exists) {
         await _createWalletWithBalance(uid, 0.0);
-        debugPrint('✅ Created new wallet for user: $uid');
       }
     } catch (e) {
-      debugPrint('⚠️ Error ensuring wallet exists: $e');
+      // Failed to ensure wallet exists - non-critical, will be created on first transaction
     }
   }
-  
+
   /// Create wallet for new user
   Future<void> _createWallet(String uid) async {
     await _createWalletWithBalance(uid, 0.0);
   }
-  
+
   /// Create wallet with initial balance (used by seed service)
-  Future<void> _createWalletWithBalance(String uid, double initialBalance) async {
+  Future<void> _createWalletWithBalance(
+    String uid,
+    double initialBalance,
+  ) async {
     try {
       await _firestore.collection(AppConstants.walletsCollection).doc(uid).set({
         'userId': uid,
@@ -496,7 +503,7 @@ class AuthService {
       });
     } catch (_) {}
   }
-  
+
   /// Create UserModel for new users (when no Firestore document exists)
   /// Role is determined by email domain only - no hardcoded logic
   /// Admin/Referee roles must be set in Firestore via seeding or admin panel
@@ -526,26 +533,24 @@ class AuthService {
           .collection(AppConstants.emailVerificationCodesCollection)
           .doc(email.toLowerCase())
           .set({
-        'code': code,
-        'email': email.toLowerCase(),
-        'createdAt': Timestamp.now(),
-        'expiresAt': Timestamp.fromDate(expirationTime),
-        'verified': false,
-      });
+            'code': code,
+            'email': email.toLowerCase(),
+            'createdAt': Timestamp.now(),
+            'expiresAt': Timestamp.fromDate(expirationTime),
+            'verified': false,
+          });
 
-      // Example: Use Firebase Cloud Functions with SendGrid, AWS SES, or similar
-      // For now, we'll print it for development
-      debugPrint('📧 Verification code for $email: $code');
-      debugPrint('⚠️  Email service not integrated. Code stored in Firestore.');
-      debugPrint('    To integrate: Set up Cloud Functions or email service to send codes.');
-
-      // In production, you would call your email service here:
+      // TODO: Integrate email service (Firebase Cloud Functions with SendGrid, AWS SES, etc.)
       // await emailService.sendVerificationCode(email: email, code: code);
 
       return AuthResult.success(null, null);
     } catch (e) {
-      debugPrint('❌ Error sending verification code: $e');
-      return AuthResult.failure('Failed to send verification code. Please try again.');
+      return AuthResult.failure(
+        ErrorHandler.getUserFriendlyErrorMessage(
+          e,
+          defaultMessage: 'Failed to send verification code. Please try again.',
+        ),
+      );
     }
   }
 
@@ -564,13 +569,16 @@ class AuthService {
       final codeTrimmed = code.trim();
 
       // Get verification code from Firestore
-      final doc = await _firestore
-          .collection(AppConstants.emailVerificationCodesCollection)
-          .doc(emailLower)
-          .get();
+      final doc =
+          await _firestore
+              .collection(AppConstants.emailVerificationCodesCollection)
+              .doc(emailLower)
+              .get();
 
       if (!doc.exists) {
-        return AuthResult.failure('Verification code not found. Please request a new code.');
+        return AuthResult.failure(
+          'Verification code not found. Please request a new code.',
+        );
       }
 
       final data = doc.data()!;
@@ -585,23 +593,31 @@ class AuthService {
 
       // Check if expired
       if (DateTime.now().isAfter(expiresAt)) {
-        return AuthResult.failure('Verification code has expired. Please request a new code.');
+        return AuthResult.failure(
+          'Verification code has expired. Please request a new code.',
+        );
       }
 
       // Verify code
       if (storedCode != codeTrimmed) {
-        return AuthResult.failure('Invalid verification code. Please check and try again.');
+        return AuthResult.failure(
+          'Invalid verification code. Please check and try again.',
+        );
       }
 
       // Mark as verified
-      await doc.reference.update({'verified': true, 'verifiedAt': Timestamp.now()});
+      await doc.reference.update({
+        'verified': true,
+        'verifiedAt': Timestamp.now(),
+      });
 
       // Get user by email and mark email as verified in their profile
-      final userQuery = await _firestore
-          .collection(AppConstants.usersCollection)
-          .where('email', isEqualTo: emailLower)
-          .limit(1)
-          .get();
+      final userQuery =
+          await _firestore
+              .collection(AppConstants.usersCollection)
+              .where('email', isEqualTo: emailLower)
+              .limit(1)
+              .get();
 
       if (userQuery.docs.isNotEmpty) {
         await userQuery.docs.first.reference.update({
@@ -612,8 +628,12 @@ class AuthService {
 
       return AuthResult.success(null, null);
     } catch (e) {
-      debugPrint('❌ Error verifying email code: $e');
-      return AuthResult.failure('Failed to verify code. Please try again.');
+      return AuthResult.failure(
+        ErrorHandler.getUserFriendlyErrorMessage(
+          e,
+          defaultMessage: 'Failed to verify code. Please try again.',
+        ),
+      );
     }
   }
 
@@ -621,19 +641,20 @@ class AuthService {
   Future<bool> isEmailVerified(String email) async {
     try {
       final emailLower = email.toLowerCase().trim();
-      
-      final userQuery = await _firestore
-          .collection(AppConstants.usersCollection)
-          .where('email', isEqualTo: emailLower)
-          .limit(1)
-          .get();
+
+      final userQuery =
+          await _firestore
+              .collection(AppConstants.usersCollection)
+              .where('email', isEqualTo: emailLower)
+              .limit(1)
+              .get();
 
       if (userQuery.docs.isEmpty) return false;
 
       final data = userQuery.docs.first.data();
       return data['emailVerified'] as bool? ?? false;
     } catch (e) {
-      debugPrint('❌ Error checking email verification: $e');
+      // Failed to check email verification - return false as safe default
       return false;
     }
   }
@@ -671,9 +692,8 @@ class AuthService {
   /// Get user counts by role from Firebase
   Future<AdminUserCounts> getUserCounts() async {
     try {
-      final snapshot = await _firestore
-          .collection(AppConstants.usersCollection)
-          .get();
+      final snapshot =
+          await _firestore.collection(AppConstants.usersCollection).get();
 
       int students = 0;
       int publicUsers = 0;
@@ -684,7 +704,9 @@ class AuthService {
         final data = doc.data();
         final role = data['role'] as String?;
         final badges = List<String>.from(data['badges'] ?? []);
-        final hasRefereeBadge = badges.any((b) => b.startsWith('VERIFIED_REF_'));
+        final hasRefereeBadge = badges.any(
+          (b) => b.startsWith('VERIFIED_REF_'),
+        );
 
         switch (role) {
           case 'STUDENT':
@@ -708,7 +730,7 @@ class AuthService {
         admins: admins,
       );
     } catch (e) {
-      debugPrint('❌ Failed to get user counts: $e');
+      // Failed to get user counts - return empty counts
       return const AdminUserCounts();
     }
   }
@@ -716,14 +738,15 @@ class AuthService {
   /// Get all users (admin only)
   Future<List<UserModel>> getAllUsers() async {
     try {
-      final snapshot = await _firestore
-          .collection(AppConstants.usersCollection)
-          .orderBy('createdAt', descending: true)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection(AppConstants.usersCollection)
+              .orderBy('createdAt', descending: true)
+              .get();
 
       return snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList();
     } catch (e) {
-      debugPrint('❌ Failed to get all users: $e');
+      // Failed to get all users - return empty list
       return [];
     }
   }
@@ -734,8 +757,10 @@ class AuthService {
         .collection(AppConstants.usersCollection)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList(),
+        );
   }
 }
 
@@ -778,4 +803,3 @@ class AuthResult {
     return AuthResult._(success: false, errorMessage: message);
   }
 }
-

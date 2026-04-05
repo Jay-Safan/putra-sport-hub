@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../../../../../core/theme/app_theme.dart';
@@ -16,7 +16,7 @@ class BookingSuccessScreen extends ConsumerWidget {
     final bookingAsync = ref.watch(bookingByIdProvider(bookingId));
     final user = ref.watch(currentUserProvider).valueOrNull;
     final isStudent = user?.isStudent ?? false;
-    
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -52,7 +52,9 @@ class BookingSuccessScreen extends ConsumerWidget {
                           color: AppTheme.successGreen.withValues(alpha: 0.2),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.successGreen.withValues(alpha: 0.3),
+                              color: AppTheme.successGreen.withValues(
+                                alpha: 0.3,
+                              ),
                               blurRadius: 30,
                               spreadRadius: 10,
                             ),
@@ -94,11 +96,14 @@ class BookingSuccessScreen extends ConsumerWidget {
                     if (booking == null) {
                       return const SizedBox.shrink();
                     }
-                    
+
                     return Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -157,7 +162,9 @@ class BookingSuccessScreen extends ConsumerWidget {
                                   Text(
                                     'Teams will be added as participants join',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.6),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       fontSize: 11,
                                     ),
                                     textAlign: TextAlign.center,
@@ -167,146 +174,47 @@ class BookingSuccessScreen extends ConsumerWidget {
                             ),
                           const SizedBox(height: 16),
                         ],
-                        // Split Bill Team Code
-                        if (booking.isSplitBill && booking.teamCode != null) ...[
-                          const SizedBox(height: 24),
-                          // Team Code Card
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppTheme.primaryGreen.withValues(alpha: 0.2),
-                                  AppTheme.primaryGreen.withValues(alpha: 0.1),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.group,
-                                      color: AppTheme.primaryGreen,
-                                      size: 20,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Split Bill Enabled',
-                                      style: TextStyle(
-                                        color: AppTheme.primaryGreen,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Share this code with your team:',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 12),
-                                GestureDetector(
-                                  onTap: () {
-                                    Clipboard.setData(ClipboardData(text: booking.teamCode!));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Team code copied!'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 14,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: AppTheme.primaryGreen,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          booking.teamCode!,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.5,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        const Icon(
-                                          Icons.copy,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  'Tap to copy',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ],
                     );
                   },
-                  loading: () => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Booking ID: ${bookingId.substring(0, 8)}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 12,
-                        fontFamily: 'monospace',
+                  loading:
+                      () => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Booking ID: ${bookingId.substring(0, 8)}',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  error: (_, __) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Booking ID: ${bookingId.substring(0, 8)}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 12,
-                        fontFamily: 'monospace',
+                  error:
+                      (_, __) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Booking ID: ${bookingId.substring(0, 8)}',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 40),
                 // View Booking button
@@ -357,39 +265,33 @@ class _FlowButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          gradient: isSecondary
-              ? null
-              : const LinearGradient(
-                  colors: [
-                    AppTheme.primaryGreen,
-                    AppTheme.primaryGreenLight,
-                  ],
-                ),
+          gradient:
+              isSecondary
+                  ? null
+                  : const LinearGradient(
+                    colors: [AppTheme.primaryGreen, AppTheme.primaryGreenLight],
+                  ),
           color: isSecondary ? Colors.white.withValues(alpha: 0.1) : null,
           borderRadius: BorderRadius.circular(16),
-          border: isSecondary
-              ? Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                )
-              : null,
-          boxShadow: isSecondary
-              ? null
-              : [
-                  BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+          border:
+              isSecondary
+                  ? Border.all(color: Colors.white.withValues(alpha: 0.2))
+                  : null,
+          boxShadow:
+              isSecondary
+                  ? null
+                  : [
+                    BoxShadow(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
+            Icon(icon, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Text(
               label,
@@ -405,4 +307,3 @@ class _FlowButton extends StatelessWidget {
     );
   }
 }
-

@@ -57,9 +57,7 @@ class FacilityListScreen extends ConsumerWidget {
               child: CustomScrollView(
                 slivers: [
                   // Hero Header
-                  SliverToBoxAdapter(
-                    child: _buildHeroHeader(context, sport),
-                  ),
+                  SliverToBoxAdapter(child: _buildHeroHeader(context, sport)),
 
                   // Sport Info Section
                   SliverToBoxAdapter(
@@ -69,9 +67,7 @@ class FacilityListScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 20),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
                   // Price Tier Badge
                   SliverToBoxAdapter(
@@ -81,9 +77,7 @@ class FacilityListScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 20),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
                   // Facilities List
                   facilitiesAsync.when(
@@ -93,84 +87,92 @@ class FacilityListScreen extends ConsumerWidget {
                           child: _buildEmptyState(sport),
                         );
                       }
-                      
+
                       // For Football: Show Stadium UPM first, then other fields
                       if (sport == SportType.football) {
-                        final stadiumFacilities = facilities.where(
-                          (f) => f.id.contains('stadium'),
-                        ).toList();
-                        final otherFacilities = facilities.where(
-                          (f) => !f.id.contains('stadium'),
-                        ).toList();
-                        
+                        final stadiumFacilities =
+                            facilities
+                                .where((f) => f.id.contains('stadium'))
+                                .toList();
+                        final otherFacilities =
+                            facilities
+                                .where((f) => !f.id.contains('stadium'))
+                                .toList();
+
                         return SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           sliver: SliverList(
                             delegate: SliverChildListDelegate([
                               // Stadium UPM first
-                              ...stadiumFacilities.map((facility) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _buildFacilityCard(
-                                  context,
-                                  facility,
-                                  isStudent,
+                              ...stadiumFacilities.map(
+                                (facility) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: _buildFacilityCard(
+                                    context,
+                                    facility,
+                                    isStudent,
+                                  ),
                                 ),
-                              )),
+                              ),
                               // Other fields below
-                              ...otherFacilities.map((facility) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _buildFacilityCard(
-                                  context,
-                                  facility,
-                                  isStudent,
+                              ...otherFacilities.map(
+                                (facility) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: _buildFacilityCard(
+                                    context,
+                                    facility,
+                                    isStudent,
+                                  ),
                                 ),
-                              )),
+                              ),
                             ]),
                           ),
                         );
                       }
-                      
+
                       // For other sports: Show all facilities normally
                       return SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final facility = facilities[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _buildFacilityCard(
-                                  context,
-                                  facility,
-                                  isStudent,
-                                ),
-                              );
-                            },
-                            childCount: facilities.length,
-                          ),
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final facility = facilities[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildFacilityCard(
+                                context,
+                                facility,
+                                isStudent,
+                              ),
+                            );
+                          }, childCount: facilities.length),
                         ),
                       );
                     },
-                    loading: () => SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => const Padding(
-                            padding: EdgeInsets.only(bottom: 16),
-                            child: ShimmerSportCard(),
+                    loading:
+                        () => SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) => const Padding(
+                                padding: EdgeInsets.only(bottom: 16),
+                                child: ShimmerSportCard(),
+                              ),
+                              childCount: 3, // Show 3 shimmer cards
+                            ),
                           ),
-                          childCount: 3, // Show 3 shimmer cards
                         ),
-                      ),
-                    ),
-                    error: (e, _) => SliverFillRemaining(
-                      child: Center(
-                        child: Text(
-                          'Error: $e',
-                          style: const TextStyle(color: AppTheme.errorRed),
+                    error:
+                        (e, _) => SliverFillRemaining(
+                          child: Center(
+                            child: Text(
+                              'Error: $e',
+                              style: const TextStyle(color: AppTheme.errorRed),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -200,9 +202,7 @@ class FacilityListScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new,
@@ -277,9 +277,7 @@ class FacilityListScreen extends ConsumerWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -290,8 +288,9 @@ class FacilityListScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.getSportColor(sport.code)
-                            .withValues(alpha: 0.3),
+                        color: AppTheme.getSportColor(
+                          sport.code,
+                        ).withValues(alpha: 0.3),
                         blurRadius: 15,
                       ),
                     ],
@@ -342,14 +341,16 @@ class FacilityListScreen extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isStudent
-                ? AppTheme.successGreen.withValues(alpha: 0.15)
-                : AppTheme.warningAmber.withValues(alpha: 0.15),
+            color:
+                isStudent
+                    ? AppTheme.successGreen.withValues(alpha: 0.15)
+                    : AppTheme.warningAmber.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isStudent
-                  ? AppTheme.successGreen.withValues(alpha: 0.3)
-                  : AppTheme.warningAmber.withValues(alpha: 0.3),
+              color:
+                  isStudent
+                      ? AppTheme.successGreen.withValues(alpha: 0.3)
+                      : AppTheme.warningAmber.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -365,9 +366,8 @@ class FacilityListScreen extends ConsumerWidget {
                 ),
                 child: Icon(
                   isStudent ? Icons.verified : Icons.info_outline,
-                  color: isStudent
-                      ? AppTheme.successGreen
-                      : AppTheme.warningAmber,
+                  color:
+                      isStudent ? AppTheme.successGreen : AppTheme.warningAmber,
                   size: 18,
                 ),
               ),
@@ -407,8 +407,12 @@ class FacilityListScreen extends ConsumerWidget {
   }
 
   Widget _buildFacilityCard(
-      BuildContext context, FacilityModel facility, bool isStudent) {
+    BuildContext context,
+    FacilityModel facility,
+    bool isStudent,
+  ) {
     final sportColor = AppTheme.getSportColor(facility.sport.code);
+    final priceLabel = facility.getPriceLabel(isStudent);
 
     return GestureDetector(
       onTap: () => context.push('/booking/facility/${facility.id}'),
@@ -417,7 +421,6 @@ class FacilityListScreen extends ConsumerWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -428,148 +431,134 @@ class FacilityListScreen extends ConsumerWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: sportColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: SportIconFromCode(
-                        sportCode: facility.sport.code,
-                        color: sportColor,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                _buildFacilityHero(facility, sportColor, priceLabel),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Text(
-                            facility.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          _buildTag(
+                            facility.isIndoor ? 'Indoor' : 'Outdoor',
+                            facility.isIndoor
+                                ? AppTheme.infoBlue
+                                : AppTheme.warningAmber,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildTag(facility.type.displayName, sportColor),
+                          if (facility.hasSubUnits) ...[
+                            const SizedBox(width: 8),
+                            _buildTag(
+                              '${facility.subUnits.length} courts',
+                              AppTheme.primaryGreenLight,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              _buildTag(
-                                facility.isIndoor ? 'Indoor' : 'Outdoor',
-                                facility.isIndoor
-                                    ? AppTheme.infoBlue
-                                    : AppTheme.warningAmber,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildTag(
-                                facility.type.displayName,
-                                sportColor,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Description - positioned between name/tags and price
-                if (facility.description.isNotEmpty)
-                  Text(
-                    facility.description,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        facility.getPriceLabel(isStudent),
-                        style: const TextStyle(
-                          color: AppTheme.primaryGreenLight,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            AppTheme.primaryGreen,
-                            AppTheme.primaryGreenLight,
                           ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryGreen.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                            spreadRadius: -2,
-                          ),
                         ],
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => context.push('/booking/facility/${facility.id}'),
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
+                      const SizedBox(height: 12),
+                      if (facility.description.isNotEmpty)
+                        Text(
+                          facility.description,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              priceLabel,
+                              style: const TextStyle(
+                                color: AppTheme.primaryGreenLight,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Book Now',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.3,
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  AppTheme.primaryGreen,
+                                  AppTheme.primaryGreenLight,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryGreen.withValues(
+                                    alpha: 0.4,
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.white,
-                                    size: 12,
-                                  ),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                  spreadRadius: -2,
                                 ),
                               ],
                             ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap:
+                                    () => context.push(
+                                      '/booking/facility/${facility.id}',
+                                    ),
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'Book Now',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.arrow_forward_ios,
+                                          color: Colors.white,
+                                          size: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -597,6 +586,189 @@ class FacilityListScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildFacilityHero(
+    FacilityModel facility,
+    Color sportColor,
+    String priceLabel,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: SizedBox(
+                height: 180,
+                width: double.infinity,
+                child: _buildFacilityImage(facility, sportColor),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.05),
+                      Colors.black.withValues(alpha: 0.45),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 14,
+              left: 14,
+              right: 14,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SportIconFromCode(
+                          sportCode: facility.sport.code,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          facility.type.displayName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.4),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      priceLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 14,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    facility.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _buildTag(
+                        facility.isIndoor ? 'Indoor' : 'Outdoor',
+                        facility.isIndoor
+                            ? AppTheme.infoBlue
+                            : AppTheme.warningAmber,
+                      ),
+                      const SizedBox(width: 8),
+                      if (facility.hasSubUnits)
+                        _buildTag(
+                          '${facility.subUnits.length} courts',
+                          AppTheme.primaryGreenLight,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFacilityImage(FacilityModel facility, Color sportColor) {
+    final url = facility.imageAssetPath;
+
+    if (url != null && url.isNotEmpty) {
+      return Image.asset(url, fit: BoxFit.cover);
+    }
+
+    return _buildImagePlaceholder(facility, sportColor);
+  }
+
+  Widget _buildImagePlaceholder(FacilityModel facility, Color sportColor) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            sportColor.withValues(alpha: 0.35),
+            AppTheme.primaryGreen.withValues(alpha: 0.25),
+            Colors.black.withValues(alpha: 0.05),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.35),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+          ),
+          child: SportIconFromCode(
+            sportCode: facility.sport.code,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildEmptyState(SportType sport) {
     return Center(
@@ -643,41 +815,41 @@ class FacilityListScreen extends ConsumerWidget {
       case 'FOOTBALL':
         title = 'Football at UPM';
         description =
-            'Book Stadium UPM for varsity matches or training fields (Padang A-E) at various locations.';
+            'Book Stadium UPM for major matches or training fields (Padang A-E) near residential colleges.';
         features = [
-          '2-hour sessions (UPM policy)',
-          'Premium Stadium + 5 training fields',
-          'Referee crew available for tournaments',
+          '2-hour sessions with natural grass',
+          'FIFA-standard Stadium + 5 training fields',
+          'Professional floodlighting for evening play',
         ];
         break;
       case 'FUTSAL':
-        title = 'Futsal Courts';
+        title = 'Futsal Court';
         description =
-            'Play at UPM Sports Complex with 4 indoor futsal courts available.';
+            'Play at KMR outdoor futsal court with concrete surface and floodlights.';
         features = [
           '2-hour sessions per booking',
-          'Indoor courts with professional flooring',
-          'Referee available for tournaments',
+          'Outdoor court with concrete surface',
+          'Popular for inter-college tournaments',
         ];
         break;
       case 'BADMINTON':
         title = 'Badminton Courts';
         description =
-            'Play at Dewan Serbaguna with 8 professional courts available.';
+            'Play at Dewan Serbaguna with 8 professional courts, air-conditioned facility.';
         features = [
-          'Up to 2 hours per booking',
-          'Select consecutive time slots',
-          'Indoor courts with wooden flooring',
+          'Hourly bookings available',
+          'BWF-standard lighting & wooden flooring',
+          'Air-conditioned multi-purpose hall',
         ];
         break;
       case 'TENNIS':
         title = 'Tennis Courts';
         description =
-            'Play at Gelanggang Tenis UPM with 14 outdoor hard courts available.';
+            'Play at UPM Tennis Complex with 14 ITF-standard hard courts and parking.';
         features = [
-          'Up to 2 hours per booking',
-          'Select consecutive time slots',
-          'Professional-grade hard courts',
+          'Hourly bookings (max 2 hours)',
+          'Acrylic surface with professional lighting',
+          'Evening play available with floodlights',
         ];
         break;
       default:
@@ -700,9 +872,7 @@ class FacilityListScreen extends ConsumerWidget {
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,41 +894,43 @@ class FacilityListScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              ...features.map((feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.getSportColor(sportCode)
-                                .withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.check,
-                            size: 14,
-                            color: AppTheme.getSportColor(sportCode),
+              ...features.map(
+                (feature) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.getSportColor(
+                            sportCode,
+                          ).withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check,
+                          size: 14,
+                          color: AppTheme.getSportColor(sportCode),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          feature,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 13,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
-
 }

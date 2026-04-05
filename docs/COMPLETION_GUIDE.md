@@ -1,7 +1,46 @@
 # PUTRASPORT HUB - APP COMPLETION GUIDE
 
-**Last Updated:** January 15, 2026  
+**Last Updated:** January 22, 2026  
 **Status:** 95% Complete - Production Ready
+
+---
+
+## 🔧 **RECENT FIXES (January 2026)**
+
+### Critical: Login Navigation Blocking - RESOLVED ✅
+**Date:** January 22, 2026  
+**Priority:** 🔴 CRITICAL (App Unusable)
+
+**Issue:** Complete UI unresponsiveness after successful login. Users could not tap any buttons or navigate after authentication.
+
+**Root Causes:**
+1. LoginScreen full-screen loader persisting during navigation transition
+2. HomeScreen `addPostFrameCallback` conflicting with router navigation
+3. ShimmerWalletCard `Spacer()` widget causing RenderFlex layout exceptions
+
+**Files Modified:**
+- `lib/features/auth/presentation/login_screen.dart` (lines 126-138)
+  - Removed: `Builder` wrapper with `isAuthenticating` check returning full-screen loader
+  - Result: Form always visible, button disabled during auth instead
+  
+- `lib/features/home/presentation/home_screen.dart` (lines 34-46)
+  - Removed: `addPostFrameCallback` admin redirect
+  - Result: No widget-level navigation conflicts
+  
+- `lib/core/navigation/app_router.dart` (lines 295-306)
+  - Added: Router-level redirect guard for admin users at `/home` route
+  - Result: Clean separation of concerns, no lifecycle conflicts
+  
+- `lib/core/widgets/shimmer_loading.dart` (line 414)
+  - Changed: `const Spacer()` → `const SizedBox(height: 20)`
+  - Result: Fixed unbounded height constraint violations
+
+**Status:** ✅ RESOLVED - App fully functional with smooth navigation
+
+**Key Learning:** 
+- Never use full-screen loaders during navigation transitions
+- Handle route protection at router level, not widget level
+- Always provide bounded constraints for flex widgets
 
 ---
 

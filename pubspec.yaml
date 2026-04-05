@@ -61,8 +61,13 @@ flutter:
 
   # Assets will be added as needed
   assets:
+    - .env  # For web development only - REMOVE before committing to public repo!
     - assets/images/
     - assets/images/facilities/
+    - assets/images/facilities/football/
+    - assets/images/facilities/futsal/
+    - assets/images/facilities/badminton/
+    - assets/images/facilities/tennis/
     - assets/images/logos/
     - assets/icons/
 

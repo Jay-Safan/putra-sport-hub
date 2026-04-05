@@ -24,10 +24,7 @@ class HelpSupportScreen extends ConsumerWidget {
         ),
         title: const Text(
           'Help & Support',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -74,7 +71,9 @@ class HelpSupportScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                              color: AppTheme.primaryGreen.withValues(
+                                alpha: 0.2,
+                              ),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Icon(
@@ -117,7 +116,7 @@ class HelpSupportScreen extends ConsumerWidget {
                 // FAQ Section
                 _buildSectionHeader('Frequently Asked Questions'),
                 const SizedBox(height: 16),
-                
+
                 // Common FAQs for all users
                 _buildFAQItem(
                   icon: Icons.account_balance_wallet,
@@ -139,7 +138,7 @@ class HelpSupportScreen extends ConsumerWidget {
                   content:
                       'Yes! You can cancel bookings up to 24 hours before the scheduled time. Refunds will be credited back to your wallet.',
                 ),
-                
+
                 // Student-specific FAQs
                 if (isStudent) ...[
                   const SizedBox(height: 12),
@@ -162,13 +161,6 @@ class HelpSupportScreen extends ConsumerWidget {
                     title: 'Can I create tournaments?',
                     content:
                         'Yes! As a student, you can create and organize tournaments. Navigate to Tournaments → Create Tournament. Tournament organizers earn merit points for organizing events.',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildFAQItem(
-                    icon: Icons.people,
-                    title: 'How does split bill work?',
-                    content:
-                        'When booking, enable "Split Bill" to share costs with teammates. Generate a team code and share it with participants. Each person pays their share through the app.',
                   ),
                 ] else ...[
                   // Public user FAQs
@@ -274,9 +266,7 @@ class HelpSupportScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,11 +277,7 @@ class HelpSupportScreen extends ConsumerWidget {
                   color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.primaryGreenLight,
-                  size: 20,
-                ),
+                child: Icon(icon, color: AppTheme.primaryGreenLight, size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -349,9 +335,7 @@ class HelpSupportScreen extends ConsumerWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: color.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -361,11 +345,7 @@ class HelpSupportScreen extends ConsumerWidget {
                     color: color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: color, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -420,9 +400,7 @@ class HelpSupportScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Row(
               children: [
@@ -477,4 +455,3 @@ class HelpSupportScreen extends ConsumerWidget {
     }
   }
 }
-

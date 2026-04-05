@@ -14,26 +14,11 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
-  bool _allowPointerEvents = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Delay pointer events until after transition completes (400ms + small buffer)
-    // This prevents mouse tracker errors during login-to-admin navigation transition
-    Future.delayed(const Duration(milliseconds: 450), () {
-      if (mounted) {
-        setState(() {
-          _allowPointerEvents = true;
-        });
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,7 +33,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+            child: const Icon(
+              Icons.arrow_back_ios,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
           onPressed: () => context.pop(),
         ),
@@ -58,29 +47,32 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         ),
         centerTitle: true,
       ),
-      body: IgnorePointer(
-        ignoring: !_allowPointerEvents,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0A1F1A),
-                Color(0xFF132E25),
-                Color(0xFF1A3D32),
-                Color(0xFF0D1F1A),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0A1F1A),
+              Color(0xFF132E25),
+              Color(0xFF1A3D32),
+              Color(0xFF0D1F1A),
+            ],
           ),
-          child: SafeArea(
+        ),
+        child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 100), // Extra bottom padding for nav
+            padding: const EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              100,
+            ), // Extra bottom padding for nav
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                
+
                 // Header Icon
                 Center(
                   child: Container(
@@ -105,7 +97,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 const Text(
                   'Admin Dashboard',
                   style: TextStyle(
@@ -125,26 +117,27 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Stats Overview Section
                 _buildStatsOverview(),
                 const SizedBox(height: 32),
-                
+
                 // Today's Activity Section
                 _buildTodayActivity(),
                 const SizedBox(height: 32),
-                
+
                 // Quick Actions Grid
                 _buildQuickActions(),
                 const SizedBox(height: 32),
-                
+
                 // System Tools Section
                 _buildResetDataSection(),
-                const SizedBox(height: 40), // Extra space for navigation buttons
+                const SizedBox(
+                  height: 40,
+                ), // Extra space for navigation buttons
               ],
             ),
           ),
-        ),
         ),
       ),
     );
@@ -155,6 +148,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final revenueStatsAsync = ref.watch(adminRevenueStatsProvider);
     final bookingCountsAsync = ref.watch(adminBookingCountsProvider);
     final tournamentStatsAsync = ref.watch(adminTournamentStatsProvider);
+    final refereeBadgeStatsAsync = ref.watch(adminRefereeBadgeStatsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,41 +169,45 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               children: [
                 Expanded(
                   child: userCountsAsync.when(
-                    data: (counts) => AdminStatCard(
-                      label: 'Total Users',
-                      value: counts.totalUsers.toString(),
-                      icon: Icons.people_rounded,
-                      gradientStart: AppTheme.infoBlue,
-                      gradientEnd: AppTheme.futsalBlue,
-                    ),
+                    data:
+                        (counts) => AdminStatCard(
+                          label: 'Total Users',
+                          value: counts.totalUsers.toString(),
+                          icon: Icons.people_rounded,
+                          gradientStart: AppTheme.infoBlue,
+                          gradientEnd: AppTheme.futsalBlue,
+                        ),
                     loading: () => const AdminStatCardShimmer(),
-                    error: (_, __) => const AdminStatCard(
-                      label: 'Total Users',
-                      value: '0',
-                      icon: Icons.people_rounded,
-                      gradientStart: AppTheme.infoBlue,
-                      gradientEnd: AppTheme.futsalBlue,
-                    ),
+                    error:
+                        (_, __) => const AdminStatCard(
+                          label: 'Total Users',
+                          value: '0',
+                          icon: Icons.people_rounded,
+                          gradientStart: AppTheme.infoBlue,
+                          gradientEnd: AppTheme.futsalBlue,
+                        ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: revenueStatsAsync.when(
-                    data: (stats) => AdminStatCard(
-                      label: 'Total Revenue',
-                      value: 'RM ${stats.totalRevenue.toStringAsFixed(0)}',
-                      icon: Icons.attach_money_rounded,
-                      gradientStart: AppTheme.successGreen,
-                      gradientEnd: AppTheme.primaryGreen,
-                    ),
+                    data:
+                        (stats) => AdminStatCard(
+                          label: 'Total Revenue',
+                          value: 'RM ${stats.totalRevenue.toStringAsFixed(0)}',
+                          icon: Icons.attach_money_rounded,
+                          gradientStart: AppTheme.successGreen,
+                          gradientEnd: AppTheme.primaryGreen,
+                        ),
                     loading: () => const AdminStatCardShimmer(),
-                    error: (_, __) => const AdminStatCard(
-                      label: 'Total Revenue',
-                      value: 'RM 0',
-                      icon: Icons.attach_money_rounded,
-                      gradientStart: AppTheme.successGreen,
-                      gradientEnd: AppTheme.primaryGreen,
-                    ),
+                    error:
+                        (_, __) => const AdminStatCard(
+                          label: 'Total Revenue',
+                          value: 'RM 0',
+                          icon: Icons.attach_money_rounded,
+                          gradientStart: AppTheme.successGreen,
+                          gradientEnd: AppTheme.primaryGreen,
+                        ),
                   ),
                 ),
               ],
@@ -219,41 +217,94 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               children: [
                 Expanded(
                   child: bookingCountsAsync.when(
-                    data: (counts) => AdminStatCard(
-                      label: 'Active Bookings',
-                      value: counts.confirmed.toString(),
-                      icon: Icons.book_online_rounded,
-                      gradientStart: AppTheme.warningAmber,
-                      gradientEnd: AppTheme.accentGold,
-                    ),
+                    data:
+                        (counts) => AdminStatCard(
+                          label: 'Active Bookings',
+                          value: counts.confirmed.toString(),
+                          icon: Icons.book_online_rounded,
+                          gradientStart: AppTheme.warningAmber,
+                          gradientEnd: AppTheme.accentGold,
+                        ),
                     loading: () => const AdminStatCardShimmer(),
-                    error: (_, __) => const AdminStatCard(
-                      label: 'Active Bookings',
-                      value: '0',
-                      icon: Icons.book_online_rounded,
-                      gradientStart: AppTheme.warningAmber,
-                      gradientEnd: AppTheme.accentGold,
-                    ),
+                    error:
+                        (_, __) => const AdminStatCard(
+                          label: 'Active Bookings',
+                          value: '0',
+                          icon: Icons.book_online_rounded,
+                          gradientStart: AppTheme.warningAmber,
+                          gradientEnd: AppTheme.accentGold,
+                        ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: tournamentStatsAsync.when(
-                    data: (stats) => AdminStatCard(
-                      label: 'Active Tournaments',
-                      value: stats.active.toString(),
-                      icon: Icons.emoji_events_rounded,
-                      gradientStart: AppTheme.badmintonPurple,
-                      gradientEnd: const Color(0xFFBA68C8),
-                    ),
+                    data:
+                        (stats) => AdminStatCard(
+                          label: 'Active Tournaments',
+                          value: stats.active.toString(),
+                          icon: Icons.emoji_events_rounded,
+                          gradientStart: AppTheme.badmintonPurple,
+                          gradientEnd: const Color(0xFFBA68C8),
+                        ),
                     loading: () => const AdminStatCardShimmer(),
-                    error: (_, __) => const AdminStatCard(
-                      label: 'Active Tournaments',
-                      value: '0',
-                      icon: Icons.emoji_events_rounded,
-                      gradientStart: AppTheme.badmintonPurple,
-                      gradientEnd: Color(0xFFBA68C8),
-                    ),
+                    error:
+                        (_, __) => const AdminStatCard(
+                          label: 'Active Tournaments',
+                          value: '0',
+                          icon: Icons.emoji_events_rounded,
+                          gradientStart: AppTheme.badmintonPurple,
+                          gradientEnd: Color(0xFFBA68C8),
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Third row - Referee Badge Stats
+            Row(
+              children: [
+                Expanded(
+                  child: refereeBadgeStatsAsync.when(
+                    data:
+                        (stats) => AdminStatCard(
+                          label: 'Active Referees',
+                          value: stats.totalReferees.toString(),
+                          icon: Icons.sports_kabaddi_rounded,
+                          gradientStart: AppTheme.futsalBlue,
+                          gradientEnd: AppTheme.infoBlue,
+                        ),
+                    loading: () => const AdminStatCardShimmer(),
+                    error:
+                        (_, __) => const AdminStatCard(
+                          label: 'Active Referees',
+                          value: '0',
+                          icon: Icons.sports_kabaddi_rounded,
+                          gradientStart: AppTheme.futsalBlue,
+                          gradientEnd: AppTheme.infoBlue,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: refereeBadgeStatsAsync.when(
+                    data:
+                        (stats) => AdminStatCard(
+                          label: 'Total Badges',
+                          value: stats.totalBadges.toString(),
+                          icon: Icons.emoji_events_outlined,
+                          gradientStart: AppTheme.accentGold,
+                          gradientEnd: AppTheme.warningAmber,
+                        ),
+                    loading: () => const AdminStatCardShimmer(),
+                    error:
+                        (_, __) => const AdminStatCard(
+                          label: 'Total Badges',
+                          value: '0',
+                          icon: Icons.emoji_events_outlined,
+                          gradientStart: AppTheme.accentGold,
+                          gradientEnd: AppTheme.warningAmber,
+                        ),
                   ),
                 ),
               ],
@@ -269,25 +320,28 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
     return todayActivityAsync.when(
       data: (activity) => AdminTodayActivityCard(activity: activity),
-      loading: () => ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+      loading:
+          () => ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
               ),
             ),
-            child: const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryGreen),
-            ),
           ),
-        ),
-      ),
       error: (_, __) => const SizedBox.shrink(),
     );
   }
@@ -442,7 +496,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // What gets deleted
               Container(
                 padding: const EdgeInsets.all(16),
@@ -467,12 +521,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     _buildBulletPoint('All tournaments'),
                     _buildBulletPoint('All referee jobs'),
                     _buildBulletPoint('All wallets (balances reset to 0)'),
-                    _buildBulletPoint('All facilities (will be re-seeded automatically)'),
+                    _buildBulletPoint(
+                      'All facilities (will be re-seeded automatically)',
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // What's preserved
               Container(
                 padding: const EdgeInsets.all(16),
@@ -505,7 +561,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Reset Button
               SizedBox(
                 width: double.infinity,
@@ -514,10 +570,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   icon: const Icon(Icons.delete_outline, size: 22),
                   label: const Text(
                     'Reset Data (Keep Users)',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.warningAmber,
@@ -567,64 +620,71 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   void _showResetDataDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A3D32),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.warning_amber, color: AppTheme.warningAmber, size: 28),
-            SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                'Reset All Data?',
-                style: TextStyle(color: Colors.white, fontSize: 20),
-              ),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1A3D32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ],
-        ),
-        content: Text(
-          'This action cannot be undone. All data except user accounts will be permanently deleted. Are you sure you want to continue?',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 14,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
+            title: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.warning_amber,
+                  color: AppTheme.warningAmber,
+                  size: 28,
+                ),
+                SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    'Reset All Data?',
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'This action cannot be undone. All data except user accounts will be permanently deleted. Are you sure you want to continue?',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 16,
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 14,
+                height: 1.5,
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _resetData();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.warningAmber,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                ),
+                child: const Text(
+                  'Yes, Reset Data',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _resetData();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.warningAmber,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
-            child: const Text(
-              'Yes, Reset Data',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -633,33 +693,34 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        backgroundColor: Color(0xFF1A3D32),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: AppTheme.primaryGreen),
-            SizedBox(height: 20),
-            Text(
-              'Resetting data...',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+      builder:
+          (context) => const AlertDialog(
+            backgroundColor: Color(0xFF1A3D32),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppTheme.primaryGreen),
+                SizedBox(height: 20),
+                Text(
+                  'Resetting data...',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'This may take a moment',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
             ),
-            SizedBox(height: 8),
-            Text(
-              'This may take a moment',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
 
     try {
       final seedService = SeedService();
-      
+
       // Clear all data except users
       await seedService.clearAllExceptUsers();
-      
+
       // Re-seed facilities and other data
       await seedService.seedAll();
 
@@ -671,9 +732,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       ref.invalidate(adminTodayActivityProvider);
 
       if (!mounted) return;
-      
+
       Navigator.pop(context); // Close loading dialog
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Row(
@@ -694,9 +755,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       Navigator.pop(context); // Close loading dialog
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(

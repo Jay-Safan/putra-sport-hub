@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../core/constants/app_constants.dart';
+import '../core/theme/app_theme.dart';
 import '../core/utils/date_time_utils.dart';
 import '../core/utils/error_handler.dart';
 import '../core/utils/retry_utils.dart';
@@ -95,7 +96,6 @@ class TournamentService {
           subUnit: subUnit, // Pass court selection for facilities with subUnits
           bookingType: BookingType.match,
           tournamentFormat: format,
-          isSplitBill: isStudentOnly, // Auto-enable split bill for students
         );
 
         if (!bookingResult.success) {
@@ -106,6 +106,9 @@ class TournamentService {
 
         bookingId = bookingResult.booking?.id;
       }
+
+      // Generate initial bracket structure (empty)
+      final initialBracket = _generateEmptyBracket(format);
 
       // Create tournament document
       final tournament = TournamentModel(
@@ -135,7 +138,7 @@ class TournamentService {
         refereeFeeTotal: refereeFeeTotal,
         refereeJobIds: [], // Will be populated after referee jobs created
         teams: [],
-        bracketData: null, // Will be generated when first team joins
+        bracketData: initialBracket, // Generate bracket structure immediately
         shareCode: shareCode,
         isPublic: true,
         status: TournamentStatus.registrationOpen,
@@ -154,8 +157,26 @@ class TournamentService {
         config: RetryConfig.network,
       );
 
-      // Referee jobs will be created automatically when tournament registration closes
-      // (when max teams are reached). This is handled in joinTournament() method.
+      // Log tournament creation for debugging
+      debugPrint('✅ Tournament created successfully');
+      debugPrint('   ID: ${tournament.id}');
+      debugPrint('   Title: ${tournament.title}');
+      debugPrint('   Organizer: ${tournament.organizerId}');
+      debugPrint('   isPublic: ${tournament.isPublic}');
+      debugPrint('   Status: ${tournament.status.code}');
+      debugPrint(
+        '   Registration Deadline: ${tournament.registrationDeadline}',
+      );
+      debugPrint('   Start Date: ${tournament.startDate}');
+
+      // Create referee jobs immediately if booking exists
+      // This allows referees to see and apply for jobs right after tournament creation
+      if (bookingId != null && initialBracket['matches'] != null) {
+        debugPrint(
+          '📋 Creating referee jobs immediately for tournament: ${tournament.id}',
+        );
+        await _createRefereeJobsForTournament(tournament, bookingId);
+      }
 
       return TournamentResult.success(tournament);
     } catch (e) {
@@ -501,13 +522,9 @@ class TournamentService {
           }
         }
 
-        debugPrint(
-          '✅ Auto-updated tournament ${tournament.id} status: ${tournament.status.code} → ${newStatus.code}',
-        );
         return updated;
       } catch (e) {
-        debugPrint('⚠️ Failed to auto-update tournament status: $e');
-        // Return original tournament if update fails
+        // Non-critical: Status update failure returns original tournament
         return tournament;
       }
     }
@@ -555,6 +572,10 @@ class TournamentService {
                     .map((doc) => TournamentModel.fromFirestore(doc))
                     .toList();
 
+            debugPrint(
+              '🌊 Tournament stream update: ${tournaments.length} tournaments fetched',
+            );
+
             // Filter in code to avoid Firestore index requirements
             tournaments = tournaments.where((t) => t.isPublic).toList();
 
@@ -567,6 +588,10 @@ class TournamentService {
               tournaments =
                   tournaments.where((t) => t.status == statusFilter).toList();
             }
+
+            debugPrint(
+              '   After filters: ${tournaments.length} tournaments (public, sport, status)',
+            );
 
             // Apply limit after filtering
             return tournaments.take(limit).toList();
@@ -691,7 +716,7 @@ class TournamentService {
       return TournamentResult.success(updated);
     } catch (e) {
       return TournamentResult.failure(
-        'Failed to update tournament: ${e.toString()}',
+        ErrorHandler.getUserFriendlyErrorMessage(e, context: 'tournament'),
       );
     }
   }
@@ -878,6 +903,15 @@ class TournamentService {
           throw Exception('You are already registered in this tournament');
         }
 
+        // ROLE CONFLICT CHECK: Prevent joining as player if already a referee
+        // Check denormalized refereeUserIds list (O(1) lookup)
+        if (tournament.refereeUserIds.contains(user.uid)) {
+          throw Exception(
+            'You are already registered as a referee for this tournament. '
+            'You cannot participate as both a player and a referee in the same tournament.',
+          );
+        }
+
         // Validate entry fee payment
         if (tournament.entryFee != null && tournament.entryFee! > 0) {
           if (entryFeePaid == null || entryFeePaid < tournament.entryFee!) {
@@ -1045,17 +1079,33 @@ class TournamentService {
     return {};
   }
 
+  /// Generate empty bracket structure for a given format
+  Map<String, dynamic> _generateEmptyBracket(TournamentFormat format) {
+    if (format == TournamentFormat.eightTeamKnockout) {
+      return _generateEightTeamKnockout([]);
+    } else if (format == TournamentFormat.fourTeamGroup) {
+      return _generateFourTeamGroup([]);
+    }
+    return {};
+  }
+
   /// Generate 8-team knockout bracket
   Map<String, dynamic> _generateEightTeamKnockout(List<String> teamIds) {
     final matches = <Map<String, dynamic>>[];
 
-    // Quarter-finals (4 matches)
+    // Ensure we have 8 slots (fill with nulls if needed)
+    final paddedTeamIds = List<String?>.filled(8, null);
+    for (int i = 0; i < teamIds.length && i < 8; i++) {
+      paddedTeamIds[i] = teamIds[i];
+    }
+
+    // Quarter-finals (4 matches) - always create all 4 matches
     for (int i = 0; i < 4; i++) {
       matches.add({
         'round': 'QUARTER_FINAL',
         'matchNumber': i + 1,
-        'team1Id': i < teamIds.length ? teamIds[i] : null,
-        'team2Id': i + 4 < teamIds.length ? teamIds[i + 4] : null,
+        'team1Id': paddedTeamIds[i],
+        'team2Id': paddedTeamIds[i + 4],
         'winnerId': null,
         'status': 'PENDING',
       });
@@ -1065,7 +1115,7 @@ class TournamentService {
     for (int i = 0; i < 2; i++) {
       matches.add({
         'round': 'SEMI_FINAL',
-        'matchNumber': i + 1,
+        'matchNumber': i + 5,
         'team1Id': null, // Will be set when QF completes
         'team2Id': null,
         'winnerId': null,
@@ -1076,7 +1126,7 @@ class TournamentService {
     // Final (1 match)
     matches.add({
       'round': 'FINAL',
-      'matchNumber': 1,
+      'matchNumber': 7,
       'team1Id': null,
       'team2Id': null,
       'winnerId': null,
@@ -1091,26 +1141,52 @@ class TournamentService {
     };
   }
 
-  /// Generate 4-team group stage bracket (round-robin)
+  /// Generate 4-team knockout bracket (semifinals + final)
   Map<String, dynamic> _generateFourTeamGroup(List<String> teamIds) {
     final matches = <Map<String, dynamic>>[];
 
-    // Round-robin: each team plays every other team once (6 matches total)
-    int matchNum = 1;
-    for (int i = 0; i < teamIds.length; i++) {
-      for (int j = i + 1; j < teamIds.length; j++) {
-        matches.add({
-          'round': 'GROUP_STAGE',
-          'matchNumber': matchNum++,
-          'team1Id': teamIds[i],
-          'team2Id': teamIds[j],
-          'team1Score': null,
-          'team2Score': null,
-          'winnerId': null,
-          'status': 'PENDING',
-        });
-      }
+    // Ensure we have 4 slots (fill with nulls if needed)
+    final paddedTeamIds = List<String?>.filled(4, null);
+    for (int i = 0; i < teamIds.length && i < 4; i++) {
+      paddedTeamIds[i] = teamIds[i];
     }
+
+    // Knockout format: 2 semifinals + 1 final (3 matches total)
+    // Semifinal 1
+    matches.add({
+      'round': 'SEMIFINAL',
+      'matchNumber': 1,
+      'team1Id': paddedTeamIds[0],
+      'team2Id': paddedTeamIds[1],
+      'team1Score': null,
+      'team2Score': null,
+      'winnerId': null,
+      'status': 'PENDING',
+    });
+
+    // Semifinal 2
+    matches.add({
+      'round': 'SEMIFINAL',
+      'matchNumber': 2,
+      'team1Id': paddedTeamIds[2],
+      'team2Id': paddedTeamIds[3],
+      'team1Score': null,
+      'team2Score': null,
+      'winnerId': null,
+      'status': 'PENDING',
+    });
+
+    // Final (winners advance here)
+    matches.add({
+      'round': 'FINAL',
+      'matchNumber': 3,
+      'team1Id': null, // Winner of match 1
+      'team2Id': null, // Winner of match 2
+      'team1Score': null,
+      'team2Score': null,
+      'winnerId': null,
+      'status': 'PENDING',
+    });
 
     return {
       'format': TournamentFormat.fourTeamGroup.code,
@@ -1164,6 +1240,66 @@ class TournamentService {
       bracketData['matches'] = matches;
       bracketData['updatedAt'] = FieldValue.serverTimestamp();
 
+      // Auto-advance winner to next round in knockout format
+      if (winnerTeamId != null) {
+        final completedMatch = matches[matchIndex];
+        final round = completedMatch['round'] as String?;
+
+        // Handle 8-team knockout advancement
+        if (tournament.format == TournamentFormat.eightTeamKnockout) {
+          if (round == 'QUARTER_FINAL') {
+            // QF matches 1-4 advance to SF matches 5-6
+            final qfMatchNum = matchNumber; // 1, 2, 3, or 4
+            final sfMatchNum = qfMatchNum <= 2 ? 5 : 6;
+            final sfMatchIndex = matches.indexWhere(
+              (m) => m['matchNumber'] == sfMatchNum,
+            );
+
+            if (sfMatchIndex != -1) {
+              if (qfMatchNum % 2 == 1) {
+                matches[sfMatchIndex]['team1Id'] = winnerTeamId;
+              } else {
+                matches[sfMatchIndex]['team2Id'] = winnerTeamId;
+              }
+            }
+          } else if (round == 'SEMI_FINAL') {
+            // SF matches 5-6 advance to Final match 7
+            final sfMatchNum = matchNumber; // 5 or 6
+            final finalMatchIndex = matches.indexWhere(
+              (m) => m['matchNumber'] == 7,
+            );
+
+            if (finalMatchIndex != -1) {
+              if (sfMatchNum == 5) {
+                matches[finalMatchIndex]['team1Id'] = winnerTeamId;
+              } else {
+                matches[finalMatchIndex]['team2Id'] = winnerTeamId;
+              }
+            }
+          }
+        }
+        // Handle 4-team knockout advancement
+        else if (tournament.format == TournamentFormat.fourTeamGroup) {
+          if (round == 'SEMIFINAL') {
+            // SF matches 1-2 advance to Final match 3
+            final sfMatchNum = matchNumber; // 1 or 2
+            final finalMatchIndex = matches.indexWhere(
+              (m) => m['matchNumber'] == 3,
+            );
+
+            if (finalMatchIndex != -1) {
+              if (sfMatchNum == 1) {
+                matches[finalMatchIndex]['team1Id'] = winnerTeamId;
+              } else {
+                matches[finalMatchIndex]['team2Id'] = winnerTeamId;
+              }
+            }
+          }
+        }
+
+        bracketData['matches'] = matches;
+      }
+
       // Update tournament bracket
       final updatedTournament = tournament.copyWith(bracketData: bracketData);
 
@@ -1171,6 +1307,49 @@ class TournamentService {
           .collection(AppConstants.tournamentsCollection)
           .doc(tournamentId)
           .update(updatedTournament.toFirestore());
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // PHASE 2A: Safe Integrity - Match Completion → Referee Job Completion
+      // ═══════════════════════════════════════════════════════════════════════
+      // When a match result is entered (status → COMPLETED), automatically
+      // complete the linked referee job IF check-in requirements are met.
+      // This ensures referees are only paid when match results are confirmed.
+      // ═══════════════════════════════════════════════════════════════════════
+      if (winnerTeamId != null) {
+        // Match is now COMPLETED - trigger referee job completion
+        final matchData = matches[matchIndex];
+        final refereeJobId = matchData['refereeJobId'] as String?;
+
+        if (refereeJobId != null && refereeJobId.isNotEmpty) {
+          // Complete the referee job asynchronously (don't block match update)
+          _completeRefereeJobForMatch(
+                jobId: refereeJobId,
+                tournamentId: tournamentId,
+                matchNumber: matchNumber,
+                organizerUserId: tournament.organizerId,
+              )
+              .then((result) {
+                if (result.success) {
+                  debugPrint(
+                    '✅ [Phase 2A] Auto-completed referee job $refereeJobId for match $matchNumber',
+                  );
+                } else {
+                  debugPrint(
+                    '⚠️ [Phase 2A] Could not auto-complete referee job $refereeJobId: ${result.errorMessage}',
+                  );
+                }
+              })
+              .catchError((error) {
+                debugPrint(
+                  '❌ [Phase 2A] Error completing referee job for match $matchNumber: $error',
+                );
+              });
+        } else {
+          debugPrint(
+            'ℹ️ [Phase 2A] Match $matchNumber has no referee job linked - skipping job completion',
+          );
+        }
+      }
 
       return TournamentResult.success(updatedTournament);
     } catch (e) {
@@ -1266,6 +1445,105 @@ class TournamentService {
     return 'TOURNAMENT-$animal-$number';
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ROLE MANAGEMENT (BACKEND CONTRACT IMPLEMENTATION)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Get user's role in a specific tournament
+  /// Role precedence: Organizer > Player > Referee > None
+  ///
+  /// Returns:
+  /// - TournamentRole.organizer: If user is the tournament organizer
+  /// - TournamentRole.player: If user is in any team (captain or member)
+  /// - TournamentRole.referee: If user is assigned to any referee job
+  /// - TournamentRole.none: If user has no role in this tournament
+  Future<TournamentRole> getUserTournamentRole(
+    String tournamentId,
+    String userId,
+  ) async {
+    try {
+      final tournament = await getTournamentById(tournamentId);
+      if (tournament == null) {
+        return TournamentRole.none;
+      }
+
+      // Check organizer (highest precedence)
+      if (tournament.isOrganizer(userId)) {
+        return TournamentRole.organizer;
+      }
+
+      // Check player (team member or captain)
+      if (tournament.isUserParticipating(userId)) {
+        return TournamentRole.player;
+      }
+
+      // Check referee (denormalized list for O(1) lookup)
+      // Backward compatible: treat missing refereeUserIds as empty
+      if (tournament.refereeUserIds.contains(userId)) {
+        return TournamentRole.referee;
+      }
+
+      return TournamentRole.none;
+    } catch (e) {
+      debugPrint('Error getting user tournament role: $e');
+      return TournamentRole.none;
+    }
+  }
+
+  /// Get all referee jobs for a tournament
+  /// Used to check if user has any referee assignments for conflict checking
+  Future<List<RefereeJobModel>> getTournamentRefereeJobs(
+    String tournamentId,
+  ) async {
+    try {
+      final tournament = await getTournamentById(tournamentId);
+      if (tournament == null || tournament.refereeJobIds.isEmpty) {
+        return [];
+      }
+
+      // Query jobs by IDs
+      final jobsSnapshot =
+          await _firestore
+              .collection(AppConstants.jobsCollection)
+              .where(FieldPath.documentId, whereIn: tournament.refereeJobIds)
+              .get();
+
+      return jobsSnapshot.docs
+          .map((doc) => RefereeJobModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting tournament referee jobs: $e');
+      return [];
+    }
+  }
+
+  /// Ensure refereeUserIds field exists on tournament document (backward compatibility)
+  /// Call this when first referee applies to ensure field exists for array operations
+  Future<void> _ensureRefereeUserIdsExists(String tournamentId) async {
+    try {
+      final doc =
+          await _firestore
+              .collection(AppConstants.tournamentsCollection)
+              .doc(tournamentId)
+              .get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data() as Map<String, dynamic>;
+
+      // If field doesn't exist, initialize it as empty array
+      if (!data.containsKey('refereeUserIds')) {
+        await doc.reference.update({'refereeUserIds': []});
+        debugPrint(
+          '✅ Initialized refereeUserIds for tournament: $tournamentId',
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error ensuring refereeUserIds exists: $e');
+      // Non-critical error, continue
+    }
+  }
+
   /// Create referee jobs for tournament matches
   /// Creates one referee job per match in the bracket when bracket is finalized
   Future<void> _createRefereeJobsForTournament(
@@ -1314,6 +1592,15 @@ class TournamentService {
       var currentMatchTime = booking.startTime;
       final matchDuration = tournament.matchDuration;
 
+      debugPrint('🔍 [JOB CREATION DEBUG] ═══════════════════════════════');
+      debugPrint('🔍 Tournament: ${tournament.title}');
+      debugPrint('🔍 Booking startTime: $currentMatchTime');
+      debugPrint('🔍 Current time (now): ${DateTime.now()}');
+      debugPrint('🔍 Match duration: $matchDuration');
+      debugPrint('🔍 Sport: ${tournament.sport.code}');
+      debugPrint('🔍 Status that will be set: ${JobStatus.open.code}');
+      debugPrint('🔍 ═══════════════════════════════════════════════════');
+
       final createdJobIds = <String>[];
       final updatedMatches = <Map<String, dynamic>>[];
 
@@ -1322,12 +1609,16 @@ class TournamentService {
         final round = match['round'] as String? ?? 'MATCH';
 
         // Only create jobs for matches that have teams assigned (not future knockout rounds)
-        // For group stage or initial rounds, create jobs immediately
+        // For initial rounds (QF, SF with teams) or group stage, create jobs immediately
         final hasTeams = match['team1Id'] != null || match['team2Id'] != null;
+        final isInitialRound =
+            round == 'GROUP_STAGE' ||
+            round == 'QUARTER_FINAL' ||
+            round == 'SEMIFINAL';
 
-        // Skip if match doesn't have teams yet (future knockout rounds)
-        // These will be created when teams advance
-        if (!hasTeams && round != 'GROUP_STAGE') {
+        // Skip if match doesn't have teams yet AND it's not an initial round
+        // (e.g., finals in knockout where winners haven't advanced yet)
+        if (!hasTeams && !isInitialRound) {
           debugPrint('⏭️ Skipping match $matchNumber (no teams assigned yet)');
           updatedMatches.add(match);
           continue;
@@ -1364,10 +1655,27 @@ class TournamentService {
             .doc(jobId)
             .set(job.toFirestore());
 
+        debugPrint('✅ [JOB CREATED] ─────────────────────────────────');
+        debugPrint('✅ Job ID: $jobId');
+        debugPrint('✅ Match #$matchNumber ($round)');
+        debugPrint('✅ Status: ${job.status.code}');
+        debugPrint('✅ Sport: ${job.sport.code}');
+        debugPrint('✅ Start time: ${job.startTime}');
+        debugPrint('✅ End time: ${job.endTime}');
+        debugPrint('✅ End time > now? ${job.endTime.isAfter(DateTime.now())}');
+        debugPrint('✅ Earnings: RM${job.earnings}');
+        debugPrint('✅ Collection: ${AppConstants.jobsCollection}');
+        debugPrint('✅ ────────────────────────────────────────────────');
+
         createdJobIds.add(jobId);
 
-        // Update match with referee job ID
-        updatedMatches.add({...match, 'refereeJobId': jobId});
+        // Update match with referee job ID AND match times
+        updatedMatches.add({
+          ...match,
+          'refereeJobId': jobId,
+          'matchStartTime': Timestamp.fromDate(currentMatchTime),
+          'matchEndTime': Timestamp.fromDate(matchEndTime),
+        });
 
         // Move to next match time (add buffer between matches if needed)
         currentMatchTime = matchEndTime.add(
@@ -1580,6 +1888,299 @@ class TournamentService {
                   .map((doc) => TournamentModel.fromFirestore(doc))
                   .toList(),
         );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // REFEREE COVERAGE HELPERS (Phase 1 - Visibility)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Get referee coverage status for a specific match
+  /// Returns status: 'full', 'partial', 'empty', or 'no-job'
+  Future<MatchRefereeCoverage> getMatchRefereeCoverage({
+    required String tournamentId,
+    required int matchNumber,
+  }) async {
+    try {
+      final tournament = await getTournamentById(tournamentId);
+      if (tournament == null) {
+        return MatchRefereeCoverage.noJob();
+      }
+
+      // Get match from bracket
+      final matches = tournament.bracketData?['matches'] as List<dynamic>?;
+      if (matches == null) {
+        return MatchRefereeCoverage.noJob();
+      }
+
+      final match = matches.firstWhere(
+        (m) => m['matchNumber'] == matchNumber,
+        orElse: () => null,
+      );
+
+      if (match == null) {
+        return MatchRefereeCoverage.noJob();
+      }
+
+      final refereeJobId = match['refereeJobId'] as String?;
+      if (refereeJobId == null) {
+        return MatchRefereeCoverage.noJob();
+      }
+
+      // Get referee job
+      final jobDoc =
+          await _firestore
+              .collection(AppConstants.jobsCollection)
+              .doc(refereeJobId)
+              .get();
+
+      if (!jobDoc.exists) {
+        return MatchRefereeCoverage.noJob();
+      }
+
+      final job = RefereeJobModel.fromFirestore(jobDoc);
+
+      // Calculate coverage
+      if (job.isFullyAssigned) {
+        return MatchRefereeCoverage.full(
+          assignedCount: job.assignedReferees.length,
+          requiredCount: job.refereesRequired,
+          referees: job.assignedReferees,
+        );
+      } else if (job.assignedReferees.isNotEmpty) {
+        return MatchRefereeCoverage.partial(
+          assignedCount: job.assignedReferees.length,
+          requiredCount: job.refereesRequired,
+          referees: job.assignedReferees,
+        );
+      } else {
+        return MatchRefereeCoverage.empty(requiredCount: job.refereesRequired);
+      }
+    } catch (e) {
+      debugPrint('Error getting match referee coverage: $e');
+      return MatchRefereeCoverage.noJob();
+    }
+  }
+
+  /// Get all referee coverage for a tournament
+  Future<Map<int, MatchRefereeCoverage>> getTournamentRefereeCoverage(
+    String tournamentId,
+  ) async {
+    try {
+      final tournament = await getTournamentById(tournamentId);
+      if (tournament == null) {
+        return {};
+      }
+
+      final matches = tournament.bracketData?['matches'] as List<dynamic>?;
+      if (matches == null) {
+        return {};
+      }
+
+      final coverage = <int, MatchRefereeCoverage>{};
+
+      for (final match in matches) {
+        final matchNumber = match['matchNumber'] as int;
+        coverage[matchNumber] = await getMatchRefereeCoverage(
+          tournamentId: tournamentId,
+          matchNumber: matchNumber,
+        );
+      }
+
+      return coverage;
+    } catch (e) {
+      debugPrint('Error getting tournament referee coverage: $e');
+      return {};
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 2A: Safe Integrity Helper - Complete Referee Job with Check-In Guard
+  // ═══════════════════════════════════════════════════════════════════════════
+  /// Completes a referee job for a match with check-in requirement enforcement.
+  ///
+  /// This method ensures payment integrity by:
+  /// 1. Verifying at least one referee checked in (proof of service)
+  /// 2. Only completing job if check-in requirement is met
+  /// 3. Logging warnings if check-ins are missing (for organizer follow-up)
+  ///
+  /// Edge Cases Handled:
+  /// - Job already completed → Skip (idempotent)
+  /// - No assigned referees → Skip (job might still be OPEN)
+  /// - No check-ins → Log warning, don't complete (organizer can override later)
+  /// - Job not found → Log error
+  Future<RefereeJobResult> _completeRefereeJobForMatch({
+    required String jobId,
+    required String tournamentId,
+    required int matchNumber,
+    required String organizerUserId,
+  }) async {
+    try {
+      // Fetch referee job
+      final jobDoc =
+          await _firestore
+              .collection(AppConstants.jobsCollection)
+              .doc(jobId)
+              .get();
+
+      if (!jobDoc.exists) {
+        debugPrint(
+          '⚠️ [Phase 2A] Referee job $jobId not found for match $matchNumber',
+        );
+        return RefereeJobResult.failure('Referee job not found');
+      }
+
+      final job = RefereeJobModel.fromFirestore(jobDoc);
+
+      // Edge Case 1: Job already completed
+      if (job.status == JobStatus.completed) {
+        debugPrint(
+          'ℹ️ [Phase 2A] Referee job $jobId already completed - skipping',
+        );
+        return RefereeJobResult.success(job);
+      }
+
+      // Edge Case 2: No assigned referees yet (job might still be OPEN)
+      if (job.assignedReferees.isEmpty) {
+        debugPrint(
+          '⚠️ [Phase 2A] No referees assigned to job $jobId yet - skipping completion',
+        );
+        return RefereeJobResult.failure('No referees assigned yet');
+      }
+
+      // CRITICAL: Check-in requirement - at least one referee must have checked in
+      final hasAnyCheckedIn = job.assignedReferees.any((r) => r.hasCheckedIn);
+
+      if (!hasAnyCheckedIn) {
+        // Edge Case 3: No check-ins - DON'T complete job
+        debugPrint(
+          '❌ [Phase 2A] Cannot complete job $jobId - NO referees checked in for match $matchNumber',
+        );
+        debugPrint(
+          '   Assigned referees: ${job.assignedReferees.map((r) => '${r.name} (checked in: ${r.hasCheckedIn})').join(', ')}',
+        );
+        debugPrint(
+          '   ⚠️ PAYMENT BLOCKED - Organizer can manually complete if check-in was missed',
+        );
+        return RefereeJobResult.failure(
+          'Cannot complete - no referee checked in. Organizer can override manually.',
+        );
+      }
+
+      // Check-in requirement MET - proceed with job completion
+      debugPrint(
+        '✅ [Phase 2A] Check-in verified for job $jobId - proceeding with completion',
+      );
+      debugPrint(
+        '   Checked-in referees: ${job.assignedReferees.where((r) => r.hasCheckedIn).map((r) => r.name).join(', ')}',
+      );
+
+      // Use existing RefereeService.completeJob() - this handles escrow release
+      final refereeService = RefereeService();
+      final result = await refereeService.completeJob(
+        jobId: jobId,
+        organizerUserId: organizerUserId,
+        allowAutoComplete: false, // Don't bypass organizer check
+      );
+
+      if (result.success) {
+        debugPrint(
+          '✅ [Phase 2A] Successfully completed job $jobId and released escrow for match $matchNumber',
+        );
+      } else {
+        debugPrint(
+          '⚠️ [Phase 2A] RefereeService.completeJob() failed: ${result.errorMessage}',
+        );
+      }
+
+      return result;
+    } catch (e) {
+      debugPrint(
+        '❌ [Phase 2A] Error completing referee job $jobId for match $matchNumber: $e',
+      );
+      return RefereeJobResult.failure('Error completing referee job: $e');
+    }
+  }
+}
+
+/// Match referee coverage status
+class MatchRefereeCoverage {
+  final String status; // 'full', 'partial', 'empty', 'no-job'
+  final int assignedCount;
+  final int requiredCount;
+  final List<AssignedReferee> referees;
+
+  const MatchRefereeCoverage({
+    required this.status,
+    this.assignedCount = 0,
+    this.requiredCount = 0,
+    this.referees = const [],
+  });
+
+  factory MatchRefereeCoverage.full({
+    required int assignedCount,
+    required int requiredCount,
+    required List<AssignedReferee> referees,
+  }) {
+    return MatchRefereeCoverage(
+      status: 'full',
+      assignedCount: assignedCount,
+      requiredCount: requiredCount,
+      referees: referees,
+    );
+  }
+
+  factory MatchRefereeCoverage.partial({
+    required int assignedCount,
+    required int requiredCount,
+    required List<AssignedReferee> referees,
+  }) {
+    return MatchRefereeCoverage(
+      status: 'partial',
+      assignedCount: assignedCount,
+      requiredCount: requiredCount,
+      referees: referees,
+    );
+  }
+
+  factory MatchRefereeCoverage.empty({required int requiredCount}) {
+    return MatchRefereeCoverage(status: 'empty', requiredCount: requiredCount);
+  }
+
+  factory MatchRefereeCoverage.noJob() {
+    return const MatchRefereeCoverage(status: 'no-job');
+  }
+
+  bool get isFull => status == 'full';
+  bool get isPartial => status == 'partial';
+  bool get isEmpty => status == 'empty';
+  bool get hasNoJob => status == 'no-job';
+
+  Color get indicatorColor {
+    switch (status) {
+      case 'full':
+        return AppTheme.successGreen;
+      case 'partial':
+        return AppTheme.warningAmber;
+      case 'empty':
+        return AppTheme.errorRed;
+      case 'no-job':
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String get displayText {
+    switch (status) {
+      case 'full':
+        return 'Fully Staffed ($assignedCount/$requiredCount)';
+      case 'partial':
+        return 'Partial ($assignedCount/$requiredCount)';
+      case 'empty':
+        return 'No Referee (0/$requiredCount)';
+      case 'no-job':
+      default:
+        return 'No Job Created';
+    }
   }
 }
 

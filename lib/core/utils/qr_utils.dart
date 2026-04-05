@@ -54,7 +54,8 @@ class QRUtils {
   static bool validateBookingQR(String qrData, String expectedBookingId) {
     final data = parseQRData(qrData);
     if (data == null) return false;
-    return data['type'] == 'BOOKING_CHECKIN' && data['booking_id'] == expectedBookingId;
+    return data['type'] == 'BOOKING_CHECKIN' &&
+        data['booking_id'] == expectedBookingId;
   }
 
   /// Validate QR code data for referee check-in
@@ -67,48 +68,9 @@ class QRUtils {
   /// Generate a random alphanumeric code
   static String _generateRandomCode(int length) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return List.generate(length, (_) => chars[_random.nextInt(chars.length)]).join();
-  }
-
-  /// Generate a team code for split bill (e.g., TIGER-882)
-  static String generateTeamCode() {
-    const animals = [
-      'TIGER', 'EAGLE', 'SHARK', 'LION', 'WOLF',
-      'HAWK', 'BEAR', 'COBRA', 'FALCON', 'PANTHER',
-      'DRAGON', 'PHOENIX', 'STORM', 'THUNDER', 'BLAZE'
-    ];
-    final animal = animals[_random.nextInt(animals.length)];
-    final number = _random.nextInt(900) + 100; // 100-999
-    return '$animal-$number';
-  }
-
-  /// Generate a shareable invite link
-  static String generateInviteLink({
-    required String bookingId,
-    required String teamCode,
-  }) {
-    // In production, this would be a deep link
-    return 'putrasport://join/$teamCode?booking=$bookingId';
-  }
-
-  /// Parse team code from invite link
-  static Map<String, String>? parseInviteLink(String link) {
-    try {
-      final uri = Uri.parse(link);
-      if (uri.scheme != 'putrasport' || uri.host != 'join') return null;
-      
-      final teamCode = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-      final bookingId = uri.queryParameters['booking'];
-      
-      if (teamCode == null || bookingId == null) return null;
-      
-      return {
-        'team_code': teamCode,
-        'booking_id': bookingId,
-      };
-    } catch (e) {
-      return null;
-    }
+    return List.generate(
+      length,
+      (_) => chars[_random.nextInt(chars.length)],
+    ).join();
   }
 }
-

@@ -1,16 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../services/booking_service.dart';
+import '../../../../services/booking_operations_service.dart';
 
 /// Today's activity summary card for admin dashboard
 class AdminTodayActivityCard extends StatelessWidget {
   final AdminTodayActivity activity;
 
-  const AdminTodayActivityCard({
-    super.key,
-    required this.activity,
-  });
+  const AdminTodayActivityCard({super.key, required this.activity});
 
   @override
   Widget build(BuildContext context) {
@@ -137,11 +134,7 @@ class AdminTodayActivityCard extends StatelessWidget {
               color: color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 16,
-            ),
+            child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(width: 8),
           Expanded(

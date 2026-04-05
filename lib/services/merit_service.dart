@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../core/constants/app_constants.dart';
+import '../core/utils/error_handler.dart';
 import '../features/merit/data/models/merit_record_model.dart';
 import '../features/auth/data/models/user_model.dart';
 import '../features/booking/data/models/booking_model.dart';
@@ -15,7 +16,7 @@ class MeritService {
   final Uuid _uuid = const Uuid();
 
   MeritService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // MERIT POINTS MANAGEMENT
@@ -28,17 +29,18 @@ class MeritService {
     required String userId,
   }) async {
     try {
-      final snapshot = await _firestore
-          .collection(AppConstants.meritRecordsCollection)
-          .where('userId', isEqualTo: userId)
-          .where('referenceId', isEqualTo: referenceId)
-          .where('activityType', isEqualTo: activityType.code)
-          .limit(1)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection(AppConstants.meritRecordsCollection)
+              .where('userId', isEqualTo: userId)
+              .where('referenceId', isEqualTo: referenceId)
+              .where('activityType', isEqualTo: activityType.code)
+              .limit(1)
+              .get();
 
       return snapshot.docs.isNotEmpty;
     } catch (e) {
-      // If check fails, allow awarding (better to award than block)
+      // Non-critical: If duplicate check fails, allow awarding (better to award than block)
       return false;
     }
   }
@@ -58,12 +60,15 @@ class MeritService {
         academicYear: academicYear,
       );
 
-      final currentPoints = records.fold<int>(0, (total, r) => total + r.points);
+      final currentPoints = records.fold<int>(
+        0,
+        (total, r) => total + r.points,
+      );
       final newTotal = currentPoints + pointsToAdd;
 
       return newTotal <= AppConstants.meritPointsMaxPerSemester;
     } catch (e) {
-      // If check fails, allow awarding (better to award than block)
+      // Non-critical: If cap check fails, allow awarding (better to award than block)
       return true;
     }
   }
@@ -140,7 +145,9 @@ class MeritService {
 
       return MeritResult.success(record);
     } catch (e) {
-      return MeritResult.failure('Failed to award merit: ${e.toString()}');
+      return MeritResult.failure(
+        ErrorHandler.getUserFriendlyErrorMessage(e, context: 'merit'),
+      );
     }
   }
 
@@ -214,7 +221,9 @@ class MeritService {
 
       return MeritResult.success(record);
     } catch (e) {
-      return MeritResult.failure('Failed to award merit: ${e.toString()}');
+      return MeritResult.failure(
+        ErrorHandler.getUserFriendlyErrorMessage(e, context: 'merit'),
+      );
     }
   }
 
@@ -266,7 +275,9 @@ class MeritService {
         userEmail: user.email,
         userName: user.displayName,
         matricNo: user.matricNo,
-        category: MeritCategory.leadership, // Tournament organizer counts as leadership (B3)
+        category:
+            MeritCategory
+                .leadership, // Tournament organizer counts as leadership (B3)
         activityType: MeritActivityType.sukolOrganizer,
         sport: sport,
         activityDescription: MeritRecordModel.generateDescription(
@@ -292,7 +303,9 @@ class MeritService {
 
       return MeritResult.success(record);
     } catch (e) {
-      return MeritResult.failure('Failed to award merit: ${e.toString()}');
+      return MeritResult.failure(
+        ErrorHandler.getUserFriendlyErrorMessage(e, context: 'merit'),
+      );
     }
   }
 
@@ -317,7 +330,9 @@ class MeritService {
     );
 
     if (alreadyAwarded) {
-      return MeritResult.failure('Merit already awarded for this tournament participation');
+      return MeritResult.failure(
+        'Merit already awarded for this tournament participation',
+      );
     }
 
     // Check semester cap
@@ -370,7 +385,9 @@ class MeritService {
 
       return MeritResult.success(record);
     } catch (e) {
-      return MeritResult.failure('Failed to award merit: ${e.toString()}');
+      return MeritResult.failure(
+        ErrorHandler.getUserFriendlyErrorMessage(e, context: 'merit'),
+      );
     }
   }
 
@@ -379,9 +396,7 @@ class MeritService {
     await _firestore
         .collection(AppConstants.usersCollection)
         .doc(userId)
-        .update({
-      'totalMeritPoints': FieldValue.increment(points),
-    });
+        .update({'totalMeritPoints': FieldValue.increment(points)});
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -390,11 +405,12 @@ class MeritService {
 
   /// Get all merit records for a user
   Future<List<MeritRecordModel>> getUserMeritRecords(String userId) async {
-    final snapshot = await _firestore
-        .collection(AppConstants.meritRecordsCollection)
-        .where('userId', isEqualTo: userId)
-        .orderBy('activityDate', descending: true)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection(AppConstants.meritRecordsCollection)
+            .where('userId', isEqualTo: userId)
+            .orderBy('activityDate', descending: true)
+            .get();
 
     return snapshot.docs
         .map((doc) => MeritRecordModel.fromFirestore(doc))
@@ -407,13 +423,14 @@ class MeritService {
     required String semester,
     required String academicYear,
   }) async {
-    final snapshot = await _firestore
-        .collection(AppConstants.meritRecordsCollection)
-        .where('userId', isEqualTo: userId)
-        .where('semester', isEqualTo: semester)
-        .where('academicYear', isEqualTo: academicYear)
-        .orderBy('activityDate', descending: true)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection(AppConstants.meritRecordsCollection)
+            .where('userId', isEqualTo: userId)
+            .where('semester', isEqualTo: semester)
+            .where('academicYear', isEqualTo: academicYear)
+            .orderBy('activityDate', descending: true)
+            .get();
 
     return snapshot.docs
         .map((doc) => MeritRecordModel.fromFirestore(doc))
@@ -474,49 +491,50 @@ class MeritService {
         margin: const pw.EdgeInsets.all(40),
         header: (context) => _buildHeader(user),
         footer: (context) => _buildFooter(context),
-        build: (context) => [
-          // Title
-          pw.Center(
-            child: pw.Text(
-              'MERIT ACTIVITY TRANSCRIPT',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
+        build:
+            (context) => [
+              // Title
+              pw.Center(
+                child: pw.Text(
+                  'MERIT ACTIVITY TRANSCRIPT',
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
-          ),
-          pw.SizedBox(height: 8),
-          pw.Center(
-            child: pw.Text(
-              'PutraSportHub - UPM Housing Merit System (GP08)',
-              style: const pw.TextStyle(fontSize: 10),
-            ),
-          ),
-          pw.SizedBox(height: 24),
+              pw.SizedBox(height: 8),
+              pw.Center(
+                child: pw.Text(
+                  'PutraSportHub - UPM Housing Merit System (GP08)',
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
+              ),
+              pw.SizedBox(height: 24),
 
-          // Student Info
-          _buildStudentInfo(user, semester, academicYear),
-          pw.SizedBox(height: 24),
+              // Student Info
+              _buildStudentInfo(user, semester, academicYear),
+              pw.SizedBox(height: 24),
 
-          // Summary
-          _buildMeritSummary(records, totalPoints),
-          pw.SizedBox(height: 24),
+              // Summary
+              _buildMeritSummary(records, totalPoints),
+              pw.SizedBox(height: 24),
 
-          // Activity Table
-          pw.Text(
-            'ACTIVITY DETAILS',
-            style: pw.TextStyle(
-              fontSize: 12,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-          pw.SizedBox(height: 8),
-          _buildActivityTable(records, dateFormat),
-          pw.SizedBox(height: 24),
+              // Activity Table
+              pw.Text(
+                'ACTIVITY DETAILS',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              _buildActivityTable(records, dateFormat),
+              pw.SizedBox(height: 24),
 
-          // Verification
-          _buildVerificationSection(),
-        ],
+              // Verification
+              _buildVerificationSection(),
+            ],
       ),
     );
 
@@ -545,10 +563,7 @@ class MeritService {
                   color: PdfColors.green800,
                 ),
               ),
-              pw.Text(
-                'Pusat Sukan',
-                style: const pw.TextStyle(fontSize: 10),
-              ),
+              pw.Text('Pusat Sukan', style: const pw.TextStyle(fontSize: 10)),
             ],
           ),
           pw.Container(
@@ -639,24 +654,21 @@ class MeritService {
             width: 80,
             child: pw.Text(
               '$label:',
-              style: pw.TextStyle(
-                fontSize: 9,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
             ),
           ),
           pw.Expanded(
-            child: pw.Text(
-              value,
-              style: const pw.TextStyle(fontSize: 9),
-            ),
+            child: pw.Text(value, style: const pw.TextStyle(fontSize: 9)),
           ),
         ],
       ),
     );
   }
 
-  pw.Widget _buildMeritSummary(List<MeritRecordModel> records, int totalPoints) {
+  pw.Widget _buildMeritSummary(
+    List<MeritRecordModel> records,
+    int totalPoints,
+  ) {
     final sportPoints = records
         .where((r) => r.category == MeritCategory.sports)
         .fold<int>(0, (total, r) => total + r.points);
@@ -681,15 +693,16 @@ class MeritService {
     );
   }
 
-  pw.Widget _summaryBox(String label, int points, {bool isHighlighted = false}) {
+  pw.Widget _summaryBox(
+    String label,
+    int points, {
+    bool isHighlighted = false,
+  }) {
     return pw.Column(
       children: [
         pw.Text(
           label,
-          style: pw.TextStyle(
-            fontSize: 9,
-            fontWeight: pw.FontWeight.bold,
-          ),
+          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 4),
         pw.Container(
@@ -737,15 +750,17 @@ class MeritService {
           ],
         ),
         // Data rows
-        ...records.map((record) => pw.TableRow(
-              children: [
-                _tableCell(dateFormat.format(record.activityDate)),
-                _tableCell(record.category.displayName),
-                _tableCell(record.activityDescription),
-                _tableCell(record.sport.displayName),
-                _tableCell(record.points.toString(), isCentered: true),
-              ],
-            )),
+        ...records.map(
+          (record) => pw.TableRow(
+            children: [
+              _tableCell(dateFormat.format(record.activityDate)),
+              _tableCell(record.category.displayName),
+              _tableCell(record.activityDescription),
+              _tableCell(record.sport.displayName),
+              _tableCell(record.points.toString(), isCentered: true),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -787,10 +802,7 @@ class MeritService {
         children: [
           pw.Text(
             'VERIFICATION',
-            style: pw.TextStyle(
-              fontSize: 10,
-              fontWeight: pw.FontWeight.bold,
-            ),
+            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
           pw.Text(
@@ -877,11 +889,7 @@ class MeritResult {
   final MeritRecordModel? record;
   final String? errorMessage;
 
-  const MeritResult._({
-    required this.success,
-    this.record,
-    this.errorMessage,
-  });
+  const MeritResult._({required this.success, this.record, this.errorMessage});
 
   factory MeritResult.success(MeritRecordModel record) {
     return MeritResult._(success: true, record: record);
@@ -891,4 +899,3 @@ class MeritResult {
     return MeritResult._(success: false, errorMessage: message);
   }
 }
-

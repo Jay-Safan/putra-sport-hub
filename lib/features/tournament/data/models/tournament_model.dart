@@ -44,6 +44,8 @@ class TournamentModel {
   final int refereesRequired;
   final double refereeFeeTotal;
   final List<String> refereeJobIds; // Auto-created referee jobs
+  final List<String>
+  refereeUserIds; // Denormalized list of referee user IDs for O(1) role checking
 
   // Participants
   final List<TournamentTeamModel> teams;
@@ -87,6 +89,7 @@ class TournamentModel {
     required this.refereesRequired,
     required this.refereeFeeTotal,
     this.refereeJobIds = const [],
+    this.refereeUserIds = const [],
     this.teams = const [],
     this.bracketData,
     required this.shareCode,
@@ -101,14 +104,14 @@ class TournamentModel {
   bool get isRegistrationOpen {
     return status == TournamentStatus.registrationOpen &&
         DateTime.now().isBefore(registrationDeadline) &&
-        currentTeams < maxTeams;
+        teams.length < maxTeams;
   }
 
   /// Check if tournament has available slots
-  bool get hasAvailableSlots => currentTeams < maxTeams;
+  bool get hasAvailableSlots => teams.length < maxTeams;
 
   /// Get remaining slots
-  int get remainingSlots => maxTeams - currentTeams;
+  int get remainingSlots => maxTeams - teams.length;
 
   /// Check if user is organizer
   bool isOrganizer(String userId) => organizerId == userId;
@@ -116,6 +119,11 @@ class TournamentModel {
   /// Check if user is part of any team
   bool isUserParticipating(String userId) {
     return teams.any((team) => team.isMember(userId));
+  }
+
+  /// Check if user is a referee for this tournament
+  bool isUserReferee(String userId) {
+    return refereeUserIds.contains(userId);
   }
 
   /// Get team user belongs to (if any)
@@ -128,7 +136,7 @@ class TournamentModel {
   }
 
   /// Check if tournament is full
-  bool get isFull => currentTeams >= maxTeams;
+  bool get isFull => teams.length >= maxTeams;
 
   /// Factory constructor from Firestore
   factory TournamentModel.fromFirestore(DocumentSnapshot doc) {
@@ -166,6 +174,9 @@ class TournamentModel {
       refereesRequired: data['refereesRequired'] ?? 1,
       refereeFeeTotal: (data['refereeFeeTotal'] ?? 0).toDouble(),
       refereeJobIds: List<String>.from(data['refereeJobIds'] ?? []),
+      refereeUserIds: List<String>.from(
+        data['refereeUserIds'] ?? [],
+      ), // Backward compatible: treat missing as empty
       teams:
           (data['teams'] as List<dynamic>?)
               ?.map(
@@ -212,6 +223,7 @@ class TournamentModel {
       'refereesRequired': refereesRequired,
       'refereeFeeTotal': refereeFeeTotal,
       'refereeJobIds': refereeJobIds,
+      'refereeUserIds': refereeUserIds,
       'teams': teams.map((t) => t.toFirestore()).toList(),
       'bracketData': bracketData,
       'shareCode': shareCode,
@@ -232,6 +244,7 @@ class TournamentModel {
     Map<String, dynamic>? bracketData,
     String? bookingId,
     List<String>? refereeJobIds,
+    List<String>? refereeUserIds,
     DateTime? endDate,
   }) {
     return TournamentModel(
@@ -260,6 +273,7 @@ class TournamentModel {
       refereesRequired: refereesRequired,
       refereeFeeTotal: refereeFeeTotal,
       refereeJobIds: refereeJobIds ?? this.refereeJobIds,
+      refereeUserIds: refereeUserIds ?? this.refereeUserIds,
       teams: teams ?? this.teams,
       bracketData: bracketData ?? this.bracketData,
       shareCode: shareCode,

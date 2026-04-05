@@ -7,11 +7,20 @@ import '../../../core/theme/app_theme.dart';
 import '../../../providers/providers.dart';
 import '../data/models/transaction_model.dart';
 
-class WalletScreen extends ConsumerWidget {
+class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WalletScreen> createState() => _WalletScreenState();
+}
+
+class _WalletScreenState extends ConsumerState<WalletScreen>
+    with TickerProviderStateMixin {
+  // Track which transaction card is currently expanded (only one at a time)
+  String? _expandedTransactionId;
+
+  @override
+  Widget build(BuildContext context) {
     final walletAsync = ref.watch(walletProvider);
     final transactionsAsync = ref.watch(transactionHistoryProvider);
 
@@ -26,10 +35,7 @@ class WalletScreen extends ConsumerWidget {
         ),
         title: const Text(
           'SukanPay Wallet',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
@@ -95,7 +101,8 @@ class WalletScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Row(
                                     children: [
@@ -108,10 +115,13 @@ class WalletScreen extends ConsumerWidget {
                                               Color(0xFFFFE082),
                                             ],
                                           ),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: AppTheme.accentGold.withValues(alpha: 0.4),
+                                              color: AppTheme.accentGold
+                                                  .withValues(alpha: 0.4),
                                               blurRadius: 12,
                                               offset: const Offset(0, 4),
                                             ),
@@ -125,7 +135,8 @@ class WalletScreen extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: 12),
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           const Text(
                                             'SukanPay',
@@ -141,7 +152,9 @@ class WalletScreen extends ConsumerWidget {
                                                 ? 'Student Wallet'
                                                 : 'Sports Wallet',
                                             style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.6),
+                                              color: Colors.white.withValues(
+                                                alpha: 0.6,
+                                              ),
                                               fontSize: 12,
                                             ),
                                           ),
@@ -184,7 +197,8 @@ class WalletScreen extends ConsumerWidget {
                                   ),
                                 ],
                               ),
-                              if (wallet != null && wallet.escrowBalance > 0) ...[
+                              if (wallet != null &&
+                                  wallet.escrowBalance > 0) ...[
                                 const SizedBox(height: 12),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -207,7 +221,9 @@ class WalletScreen extends ConsumerWidget {
                                       Text(
                                         'RM ${wallet.escrowBalance.toStringAsFixed(2)} in escrow',
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.7),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.7,
+                                          ),
                                           fontSize: 11,
                                         ),
                                       ),
@@ -221,35 +237,38 @@ class WalletScreen extends ConsumerWidget {
                       ),
                     );
                   },
-                  loading: () => ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                      child: Container(
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withValues(alpha: 0.12),
-                              Colors.white.withValues(alpha: 0.04),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            width: 1,
-                          ),
-                        ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+                  loading:
+                      () => ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                          child: Container(
+                            padding: const EdgeInsets.all(28),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.12),
+                                  Colors.white.withValues(alpha: 0.04),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1,
+                              ),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppTheme.primaryGreen,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
                   error: (_, __) {
                     final user = ref.watch(currentUserProvider).valueOrNull;
                     return ClipRRect(
@@ -300,7 +319,8 @@ class WalletScreen extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 14),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'SukanPay',
@@ -317,7 +337,9 @@ class WalletScreen extends ConsumerWidget {
                                             ? 'Student Wallet'
                                             : 'Sports Wallet',
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.5),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.5,
+                                          ),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                           letterSpacing: 0.5,
@@ -334,7 +356,9 @@ class WalletScreen extends ConsumerWidget {
                                   Text(
                                     'RM',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.7),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.7,
+                                      ),
                                       fontSize: 22,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: -0.5,
@@ -438,31 +462,38 @@ class WalletScreen extends ConsumerWidget {
                     }
 
                     return Column(
-                      children: transactions.map((tx) => _buildTransactionCard(tx)).toList(),
+                      children:
+                          transactions
+                              .map((tx) => _buildExpandableTransactionCard(tx))
+                              .toList(),
                     );
                   },
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  loading:
+                      () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  error: (error, stack) => Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Error loading transactions: $error',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 14,
+                  error:
+                      (error, stack) => Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Error loading transactions: $error',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -472,176 +503,354 @@ class WalletScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTransactionCard(TransactionModel tx) {
+  /// Enhanced transaction card with expandable details
+  Widget _buildExpandableTransactionCard(TransactionModel tx) {
     // Determine if transaction is a credit (incoming) or debit (outgoing)
     final isCredit = _isCreditTransaction(tx.type);
     final displayAmount = isCredit ? tx.amount : -tx.amount;
-    final icon = isCredit 
-        ? Icons.arrow_downward_rounded 
-        : Icons.arrow_upward_rounded;
-    final color = isCredit 
-        ? AppTheme.successGreen 
-        : AppTheme.errorRed;
+    final icon =
+        isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
+    final color = isCredit ? AppTheme.successGreen : AppTheme.errorRed;
+
+    final isExpanded = _expandedTransactionId == tx.id;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: 0.08),
-                  Colors.white.withValues(alpha: 0.04),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        color.withValues(alpha: 0.25),
-                        color.withValues(alpha: 0.15),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: color.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            // Toggle expansion (collapse if already expanded, expand if collapsed)
+            _expandedTransactionId = isExpanded ? null : tx.id;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: isExpanded ? 0.12 : 0.08),
+                      Colors.white.withValues(alpha: isExpanded ? 0.08 : 0.04),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 22,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(
+                      alpha: isExpanded ? 0.18 : 0.12,
+                    ),
+                    width: isExpanded ? 1.5 : 1,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        tx.description.isNotEmpty 
-                            ? tx.description 
-                            : tx.type.displayName,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.98),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.4,
-                          height: 1.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
+                child: Column(
+                  children: [
+                    // Main transaction info (always visible)
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
                         children: [
-                          Text(
-                            _formatTransactionDate(tx.createdAt),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.2,
+                          // Transaction icon
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  color.withValues(alpha: 0.25),
+                                  color.withValues(alpha: 0.15),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: color.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(icon, color: color, size: 22),
+                          ),
+                          const SizedBox(width: 16),
+
+                          // Transaction details
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tx.description.isNotEmpty
+                                      ? tx.description
+                                      : tx.type.displayName,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.98),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.4,
+                                    height: 1.2,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Text(
+                                      _formatTransactionDate(tx.createdAt),
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    if (tx.status !=
+                                        TransactionStatus.completed) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getStatusColor(
+                                            tx.status,
+                                          ).withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color: _getStatusColor(
+                                              tx.status,
+                                            ).withValues(alpha: 0.4),
+                                            width: 0.5,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          tx.status.displayName.toUpperCase(),
+                                          style: TextStyle(
+                                            color: _getStatusColor(tx.status),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                          if (tx.status != TransactionStatus.completed) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(tx.status).withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: _getStatusColor(tx.status).withValues(alpha: 0.4),
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Text(
-                                tx.status.displayName.toUpperCase(),
+                          const SizedBox(width: 12),
+
+                          // Amount and chevron
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${displayAmount >= 0 ? '+' : '-'}RM ${displayAmount.abs().toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  color: _getStatusColor(tx.status),
-                                  fontSize: 9,
+                                  color: color,
+                                  fontSize: 17,
                                   fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
+                                  letterSpacing: -0.5,
+                                  height: 1.2,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              // Animated chevron
+                              AnimatedRotation(
+                                duration: const Duration(milliseconds: 250),
+                                turns: isExpanded ? 0.5 : 0,
+                                child: Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  size: 20,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${displayAmount >= 0 ? '+' : '-'}RM ${displayAmount.abs().toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                        height: 1.2,
-                      ),
                     ),
-                    if (tx.status == TransactionStatus.pending || 
-                        tx.status == TransactionStatus.processing) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(tx.status),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: _getStatusColor(tx.status).withValues(alpha: 0.6),
-                              blurRadius: 4,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+
+                    // Expandable details section
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 250),
+                      crossFadeState:
+                          isExpanded
+                              ? CrossFadeState.showSecond
+                              : CrossFadeState.showFirst,
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: _buildTransactionDetails(tx),
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// Build expanded transaction details section
+  Widget _buildTransactionDetails(TransactionModel tx) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Column(
+        children: [
+          // Divider
+          Container(
+            height: 1,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.white.withValues(alpha: 0.1),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+
+          // Transaction details grid
+          Column(
+            children: [
+              _buildDetailRow('Transaction ID', _formatTransactionId(tx.id)),
+              _buildDetailRow('Status', tx.status.displayName),
+              _buildDetailRow('Full Date', _formatFullDate(tx.createdAt)),
+              if (tx.referenceId != null)
+                _buildDetailRow('Reference', _formatReference(tx)),
+              if (tx.metadata != null && tx.metadata!.isNotEmpty)
+                ..._buildMetadataRows(tx.metadata!),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build detail row for expanded section
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build metadata rows from transaction metadata
+  List<Widget> _buildMetadataRows(Map<String, dynamic> metadata) {
+    final List<Widget> rows = [];
+
+    // Handle specific metadata keys with friendly names
+    metadata.forEach((key, value) {
+      if (value != null && value.toString().isNotEmpty) {
+        final String friendlyKey = _getFriendlyMetadataKey(key);
+        rows.add(_buildDetailRow(friendlyKey, value.toString()));
+      }
+    });
+
+    return rows;
+  }
+
+  /// Convert metadata keys to friendly display names
+  String _getFriendlyMetadataKey(String key) {
+    switch (key.toLowerCase()) {
+      case 'paymentmethod':
+        return 'Payment Method';
+      case 'facilityname':
+        return 'Facility';
+      case 'bookingdate':
+        return 'Booking Date';
+      case 'courtname':
+        return 'Court';
+      case 'tournamentname':
+        return 'Tournament';
+      case 'matchtype':
+        return 'Match Type';
+      default:
+        // Convert camelCase to Title Case
+        return key
+            .replaceAllMapped(
+              RegExp(r'^[a-z]|[A-Z]'),
+              (match) => match.group(0)!.toUpperCase(),
+            )
+            .replaceAllMapped(RegExp(r'[A-Z]'), (match) => ' ${match.group(0)}')
+            .trim();
+    }
+  }
+
+  /// Format transaction ID for display (shortened)
+  String _formatTransactionId(String id) {
+    if (id.length > 8) {
+      return 'TX-${id.substring(0, 8).toUpperCase()}';
+    }
+    return 'TX-${id.toUpperCase()}';
+  }
+
+  /// Format full date and time
+  String _formatFullDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Format reference information based on transaction type
+  String _formatReference(TransactionModel tx) {
+    if (tx.referenceId == null) return '-';
+
+    switch (tx.type) {
+      case TransactionType.bookingPayment:
+        return 'Booking ${tx.referenceId!.substring(0, 8).toUpperCase()}';
+      case TransactionType.tournamentEntryFee:
+        return 'Tournament ${tx.referenceId!.substring(0, 8).toUpperCase()}';
+      case TransactionType.refereePayment:
+        return 'Job ${tx.referenceId!.substring(0, 8).toUpperCase()}';
+      default:
+        return tx.referenceId!.substring(0, 8).toUpperCase();
+    }
   }
 
   /// Helper method to determine if transaction is credit (incoming money)
@@ -695,4 +904,3 @@ class WalletScreen extends ConsumerWidget {
     }
   }
 }
-

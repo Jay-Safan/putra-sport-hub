@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,8 +11,11 @@ import '../../../../../../../../../core/constants/app_constants.dart';
 import '../../../../../../../../../core/widgets/sport_icon.dart';
 import '../../../../../../../../../core/config/api_keys.dart';
 import '../../../../../../../../../core/widgets/booking_ticket_card.dart';
+import '../../../../../../../../../core/widgets/avatar_widget.dart';
 import '../../../../../../../../../providers/providers.dart';
 import '../../data/models/booking_model.dart';
+import '../../../auth/data/models/user_model.dart';
+import '../../../referee/data/models/referee_job_model.dart';
 
 class BookingDetailScreen extends ConsumerWidget {
   final String bookingId;
@@ -40,22 +44,24 @@ class BookingDetailScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: bookingAsync.maybeWhen(
-          data: (booking) => Text(
-            booking?.facilityName ?? 'Booking Details',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          orElse: () => const Text(
-            'Booking Details',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          data:
+              (booking) => Text(
+                booking?.facilityName ?? 'Booking Details',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+          orElse:
+              () => const Text(
+                'Booking Details',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         ),
         centerTitle: true,
       ),
@@ -110,43 +116,27 @@ class BookingDetailScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     // Booking Ticket Card
-                    BookingTicketCard(
-                      booking: booking,
-                      isExpanded: true,
-                    ),
+                    BookingTicketCard(booking: booking, isExpanded: true),
                     const SizedBox(height: 28),
-                    
+
+                    // Referee Status Section (for normal bookings with referee job)
+                    if (booking.refereeJobId != null)
+                      _buildRefereeStatusSection(
+                        context,
+                        ref,
+                        booking.refereeJobId!,
+                      ),
+
                     // Past Booking Summary (only for past bookings)
                     if (isPast) ...[
                       _buildPastBookingSummary(context, booking),
                       const SizedBox(height: 24),
                     ],
-                    
-                    // Action Buttons (only for upcoming bookings)
-                    if (!isPast) ...[
-                      // Split Bill Payment Button (if user is participant who hasn't paid)
-                      _buildSplitBillPaymentCard(context, ref, booking),
-                      
-                      // Leave Booking Button (if user is participant who hasn't paid)
-                      _buildLeaveBookingButton(context, ref, booking),
-                      
-                      // Share Booking Button (if split bill is enabled and user is organizer)
-                      _buildShareBookingButton(context, ref, booking),
-                    ],
-                    
+
                     // Tournament Info for Match bookings
-                    if (booking.bookingType == BookingType.match && booking.tournamentFormat != null) ...[
-                      Builder(
-                        builder: (context) {
-                          final currentUser = ref.watch(currentUserProvider).valueOrNull;
-                          final hasSplitBillCard = booking.isSplitBill &&
-                              currentUser != null &&
-                              booking.splitBillParticipants.any(
-                                (p) => p.email == currentUser.email && !p.hasPaid,
-                              );
-                          return SizedBox(height: hasSplitBillCard ? 16 : 28);
-                        },
-                      ),
+                    if (booking.bookingType == BookingType.match &&
+                        booking.tournamentFormat != null) ...[
+                      const SizedBox(height: 28),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: BackdropFilter(
@@ -203,62 +193,63 @@ class BookingDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 24),
                     ],
-                    
+
                     // Location Map Section
                     _buildLocationMapSection(context, ref, booking),
                   ],
                 ),
               );
             },
-            loading: () => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-            error: (error, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 48,
+            loading:
+                () => const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading booking',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 16,
-                    ),
+                ),
+            error:
+                (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading booking',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/home'),
+                        child: const Text('Back to Home'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => context.go('/home'),
-                    child: const Text('Back to Home'),
-                  ),
-                ],
-              ),
-            ),
+                ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildPastBookingSummary(
-    BuildContext context,
-    BookingModel booking,
-  ) {
-    final statusText = booking.status == BookingStatus.completed
-        ? 'Completed'
-        : booking.status == BookingStatus.cancelled
+  Widget _buildPastBookingSummary(BuildContext context, BookingModel booking) {
+    final statusText =
+        booking.status == BookingStatus.completed
+            ? 'Completed'
+            : booking.status == BookingStatus.cancelled
             ? 'Cancelled'
             : 'Past Booking';
-    
-    final statusColor = booking.status == BookingStatus.completed
-        ? AppTheme.successGreen
-        : booking.status == BookingStatus.cancelled
+
+    final statusColor =
+        booking.status == BookingStatus.completed
+            ? AppTheme.successGreen
+            : booking.status == BookingStatus.cancelled
             ? AppTheme.errorRed
             : Colors.grey;
 
@@ -278,9 +269,7 @@ class BookingDetailScreen extends ConsumerWidget {
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: statusColor.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: statusColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,8 +286,8 @@ class BookingDetailScreen extends ConsumerWidget {
                       booking.status == BookingStatus.completed
                           ? Icons.check_circle_outline
                           : booking.status == BookingStatus.cancelled
-                              ? Icons.cancel_outlined
-                              : Icons.history,
+                          ? Icons.cancel_outlined
+                          : Icons.history,
                       color: statusColor,
                       size: 24,
                     ),
@@ -343,18 +332,8 @@ class BookingDetailScreen extends ConsumerWidget {
                       'Total Amount',
                       'RM ${booking.totalAmount.toStringAsFixed(2)}',
                     ),
-                    if (booking.isSplitBill) ...[
-                      const SizedBox(height: 12),
-                      _buildSummaryRow(
-                        'Split Bill',
-                        '${booking.splitBillParticipants.where((p) => p.hasPaid).length}/${booking.splitBillParticipants.length} paid',
-                      ),
-                    ],
                     const SizedBox(height: 12),
-                    _buildSummaryRow(
-                      'Date',
-                      _formatDate(booking.startTime),
-                    ),
+                    _buildSummaryRow('Date', _formatDate(booking.startTime)),
                   ],
                 ),
               ),
@@ -410,530 +389,325 @@ class BookingDetailScreen extends ConsumerWidget {
     return months[month - 1];
   }
 
-  Widget _buildSplitBillPaymentCard(
+  Widget _buildRefereeStatusSection(
     BuildContext context,
     WidgetRef ref,
-    BookingModel booking,
+    String refereeJobId,
   ) {
-    final currentUser = ref.watch(currentUserProvider).valueOrNull;
-    
-    if (!booking.isSplitBill || currentUser == null) {
-      return const SizedBox.shrink();
-    }
+    final refereeJobAsync = ref.watch(refereeJobByIdProvider(refereeJobId));
 
-    // Find if current user is a participant who hasn't paid
-    final participant = booking.splitBillParticipants.firstWhere(
-      (p) => p.email == currentUser.email,
-      orElse: () => const SplitBillParticipant(
-        oderId: '',
-        email: '',
-        name: '',
-        amount: 0,
-      ),
-    );
+    return refereeJobAsync.when(
+      data: (refereeJob) {
+        if (refereeJob == null) {
+          return const SizedBox.shrink();
+        }
 
-    if (participant.email.isEmpty || participant.hasPaid) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.warningAmber.withValues(alpha: 0.2),
-                  AppTheme.warningAmber.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.warningAmber.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.accentGold.withValues(alpha: 0.15),
+                      AppTheme.accentGold.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppTheme.accentGold.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.payment,
-                      color: AppTheme.warningAmber,
-                      size: 26,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Payment Pending',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentGold.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Your share: RM ${participant.amount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 14,
+                          child: const Icon(
+                            Icons.sports,
+                            color: AppTheme.accentGold,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Referee Status',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    refereeJob.assignmentStatusText,
+                                    style: TextStyle(
+                                      color: _getRefereeStatusColor(
+                                        refereeJob.status,
+                                      ),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (refereeJob.refereesRequired > 1) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Assignment: ${refereeJob.assignmentProgress}',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Show assigned referee profile whenever there are assigned referees
+                    // Displays immediately when referee(s) accept, even for partial assignments
+                    if (refereeJob.assignedReferees.isNotEmpty)
+                      _buildAssignedRefereeProfile(context, ref, refereeJob),
+
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildRefereeInfoRow(
+                            'Referee Assignment',
+                            refereeJob.assignmentProgress,
+                          ),
+                          if (refereeJob.isPartiallyAssigned) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.warningAmber.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppTheme.warningAmber.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: AppTheme.warningAmber,
+                                    size: 16,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Partial referee coverage - session can proceed',
+                                    style: TextStyle(
+                                      color: AppTheme.warningAmber,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                          ],
+                          const SizedBox(height: 12),
+                          _buildRefereeInfoRow(
+                            'Earnings per Referee',
+                            'RM ${refereeJob.earnings.toStringAsFixed(2)}',
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.push(
-                      '/booking/${booking.id}/split-bill/pay',
-                      extra: {'participantOderId': participant.oderId},
-                    ),
-                    icon: const Icon(Icons.payment, size: 20),
-                    label: const Text('Pay Now'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.warningAmber,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
-  Widget _buildShareBookingButton(
+  Widget _buildAssignedRefereeProfile(
     BuildContext context,
     WidgetRef ref,
-    BookingModel booking,
+    RefereeJobModel refereeJob,
   ) {
-    final currentUser = ref.watch(currentUserProvider).valueOrNull;
-
-    // Only show for split bill bookings and if user is organizer
-    if (!booking.isSplitBill || currentUser == null) {
-      return const SizedBox.shrink();
-    }
-
-    // Check if current user is the organizer (owner of the booking)
-    final isOrganizer = booking.userId == currentUser.uid;
-
-    if (!isOrganizer) {
-      return const SizedBox.shrink();
-    }
+    // For normal bookings, assume one referee (first assigned referee)
+    final assignedReferee = refereeJob.assignedReferees.first;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
+      child: FutureBuilder<UserModel?>(
+        future: ref
+            .read(authServiceProvider)
+            .getUserModel(assignedReferee.userId),
+        builder: (context, snapshot) {
+          return Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.futsalBlue.withValues(alpha: 0.2),
-                  AppTheme.futsalBlue.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
+              color: AppTheme.successGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppTheme.futsalBlue.withValues(alpha: 0.3),
+                color: AppTheme.successGreen.withValues(alpha: 0.3),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.futsalBlue.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.share,
-                        color: AppTheme.futsalBlue,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Share Booking',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Invite friends to split the cost',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                // Referee Avatar - real profile photo or fallback
+                AvatarWidget.fromUser(
+                  user: snapshot.data,
+                  radius: 20,
+                  backgroundColor: AppTheme.successGreen.withValues(alpha: 0.2),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      context.push('/booking/${booking.id}/share');
-                    },
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Share via QR Code & Link'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.futsalBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 12),
+                // Referee Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Assigned Referee',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      elevation: 0,
-                    ),
+                      const SizedBox(height: 2),
+                      Text(
+                        assignedReferee.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (assignedReferee.role != RefereeRole.solo)
+                        Text(
+                          assignedReferee.role.displayName,
+                          style: TextStyle(
+                            color: AppTheme.successGreen.withValues(alpha: 0.8),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLeaveBookingButton(
-    BuildContext context,
-    WidgetRef ref,
-    BookingModel booking,
-  ) {
-    final currentUser = ref.watch(currentUserProvider).valueOrNull;
-
-    if (!booking.isSplitBill || currentUser == null) {
-      return const SizedBox.shrink();
-    }
-
-    // Check if current user is a participant (not organizer)
-    final userRole = booking.getUserRole(currentUser.email);
-    if (userRole != BookingUserRole.participant) {
-      return const SizedBox.shrink();
-    }
-
-    // Find participant
-    final participant = booking.splitBillParticipants.firstWhere(
-      (p) => p.email.toLowerCase() == currentUser.email.toLowerCase(),
-      orElse: () => const SplitBillParticipant(
-        oderId: '',
-        email: '',
-        name: '',
-        amount: 0,
-      ),
-    );
-
-    // Only show if participant hasn't paid
-    if (participant.email.isEmpty || participant.hasPaid) {
-      return const SizedBox.shrink();
-    }
-
-    // Can't leave if booking is confirmed or near start time
-    if (!booking.isActive || !booking.canCancel) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.warningAmber.withValues(alpha: 0.15),
-                  AppTheme.warningAmber.withValues(alpha: 0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.warningAmber.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.warningAmber.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.exit_to_app,
-                        color: AppTheme.warningAmber,
-                        size: 24,
-                      ),
+                // Status indicator
+                if (assignedReferee.hasCheckedIn)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Leave Booking',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'You haven\'t paid yet',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.successGreen,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showLeaveBookingDialog(context, ref, booking),
-                    icon: const Icon(Icons.exit_to_app),
-                    label: const Text('Leave Booking'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.warningAmber,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    child: const Text(
+                      'Checked In',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
                       ),
-                      elevation: 0,
                     ),
                   ),
-                ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _showLeaveBookingDialog(
-    BuildContext context,
-    WidgetRef ref,
-    BookingModel booking,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A3D32),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: AppTheme.warningAmber,
-              size: 28,
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Leave Split Bill?',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to leave "${booking.facilityName}"?',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'This will:',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildActionItem(
-              'Remove you from the split bill participants',
-              Icons.person_remove,
-            ),
-            _buildActionItem(
-              'Redistribute your share among remaining participants',
-              Icons.autorenew,
-            ),
-            Builder(
-              builder: (context) {
-                final currentUser = ref.read(currentUserProvider).valueOrNull;
-                if (currentUser != null && booking.splitBillParticipants.any((p) => p.email == currentUser.email && p.hasPaid)) {
-                  return _buildActionItem(
-                    'Process a refund to your wallet',
-                    Icons.account_balance_wallet,
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'This action cannot be undone.',
-              style: TextStyle(
-                color: AppTheme.warningAmber.withValues(alpha: 0.9),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Stay in Booking',
-              style: TextStyle(color: Colors.white70),
-            ),
+  Widget _buildRefereeInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 14,
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _handleLeaveBooking(context, ref, booking);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.warningAmber,
-              foregroundColor: const Color(0xFF1A3D32),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Leave Booking'),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildActionItem(String text, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.7)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _getRefereeStatusText(JobStatus status) {
+    switch (status) {
+      case JobStatus.open:
+        return 'Looking for referees';
+      case JobStatus.assigned:
+        return 'Referees assigned';
+      case JobStatus.completed:
+        return 'Match completed';
+      case JobStatus.paid:
+        return 'Payment completed';
+      case JobStatus.cancelled:
+        return 'Cancelled';
+    }
   }
 
-  Future<void> _handleLeaveBooking(
-    BuildContext context,
-    WidgetRef ref,
-    BookingModel booking,
-  ) async {
-    try {
-      final currentUser = ref.read(currentUserProvider).valueOrNull;
-      if (currentUser == null) return;
-
-      final bookingService = ref.read(bookingServiceProvider);
-      final result = await bookingService.leaveSplitBillBooking(
-        bookingId: booking.id,
-        user: currentUser,
-      );
-
-      if (!context.mounted) return;
-
-      if (result.success) {
-        // Refresh booking
-        ref.invalidate(bookingByIdProvider(booking.id));
-        ref.invalidate(userBookingsProvider);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You have left the booking'),
-            backgroundColor: AppTheme.successGreen,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.errorMessage ?? 'Failed to leave booking'),
-            backgroundColor: AppTheme.errorRed,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppTheme.errorRed,
-          ),
-        );
-      }
+  Color _getRefereeStatusColor(JobStatus status) {
+    switch (status) {
+      case JobStatus.open:
+        return Colors.orange;
+      case JobStatus.assigned:
+        return AppTheme.successGreen;
+      case JobStatus.completed:
+        return AppTheme.accentGold;
+      case JobStatus.paid:
+        return AppTheme.successGreen;
+      case JobStatus.cancelled:
+        return AppTheme.errorRed;
     }
   }
 
@@ -949,11 +723,15 @@ class BookingDetailScreen extends ConsumerWidget {
         if (facility == null) {
           return const SizedBox.shrink();
         }
-        
+
         // Get location from facility data or use hardcoded coordinates
-        final locationData = facility.location != null
-            ? {'latitude': facility.location!.latitude, 'longitude': facility.location!.longitude}
-            : AppConstants.getFacilityLocation(booking.facilityId);
+        final locationData =
+            facility.location != null
+                ? {
+                  'latitude': facility.location!.latitude,
+                  'longitude': facility.location!.longitude,
+                }
+                : AppConstants.getFacilityLocation(booking.facilityId);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 24),
@@ -989,7 +767,9 @@ class BookingDetailScreen extends ConsumerWidget {
                               gradient: LinearGradient(
                                 colors: [
                                   AppTheme.primaryGreen.withValues(alpha: 0.3),
-                                  AppTheme.primaryGreenLight.withValues(alpha: 0.2),
+                                  AppTheme.primaryGreenLight.withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -1039,12 +819,14 @@ class BookingDetailScreen extends ConsumerWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: _getSportColor(facility.sport)
-                                  .withValues(alpha: 0.2),
+                              color: _getSportColor(
+                                facility.sport,
+                              ).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: _getSportColor(facility.sport)
-                                    .withValues(alpha: 0.4),
+                                color: _getSportColor(
+                                  facility.sport,
+                                ).withValues(alpha: 0.4),
                               ),
                             ),
                             child: Row(
@@ -1093,7 +875,9 @@ class BookingDetailScreen extends ConsumerWidget {
                                   Text(
                                     booking.subUnit!,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1147,13 +931,14 @@ class BookingDetailScreen extends ConsumerWidget {
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () => _openMaps(
-                            context,
-                            GeoPoint(
-                              locationData['latitude']!,
-                              locationData['longitude']!,
-                            ),
-                          ),
+                          onPressed:
+                              () => _openMaps(
+                                context,
+                                GeoPoint(
+                                  locationData['latitude']!,
+                                  locationData['longitude']!,
+                                ),
+                              ),
                           icon: const Icon(Icons.directions_rounded, size: 20),
                           label: const Text('Get Directions'),
                           style: ElevatedButton.styleFrom(
@@ -1175,109 +960,105 @@ class BookingDetailScreen extends ConsumerWidget {
           ),
         );
       },
-      loading: () => Padding(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              height: 200,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.15),
-                    Colors.white.withValues(alpha: 0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1.5,
-                ),
-              ),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      error: (error, _) => Padding(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.15),
-                    Colors.white.withValues(alpha: 0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1.5,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  'Unable to load location',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 14,
+      loading:
+          () => Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.15),
+                        Colors.white.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppTheme.primaryGreen,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+      error:
+          (error, _) => Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.15),
+                        Colors.white.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Unable to load location',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
     );
   }
 
   Future<void> _openMaps(BuildContext context, GeoPoint location) async {
     final lat = location.latitude;
     final lng = location.longitude;
-    
+
     // Try multiple URL schemes for better compatibility
     // 1. Android intent URL (works on Android, opens app or browser)
-    final androidIntentUrl = Uri.parse(
-      'geo:$lat,$lng?q=$lat,$lng',
-    );
-    
+    final androidIntentUrl = Uri.parse('geo:$lat,$lng?q=$lat,$lng');
+
     // 2. Google Maps web URL (fallback that always works)
     final googleMapsUrl = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
     );
-    
+
     try {
       // First, try Android intent URL (works better on Android devices/emulators)
       if (await canLaunchUrl(androidIntentUrl)) {
-        await launchUrl(
-          androidIntentUrl,
-          mode: LaunchMode.externalApplication,
-        );
-      } 
+        await launchUrl(androidIntentUrl, mode: LaunchMode.externalApplication);
+      }
       // Fallback to Google Maps web URL (works in browser)
       else if (await canLaunchUrl(googleMapsUrl)) {
         await launchUrl(
           googleMapsUrl,
           mode: LaunchMode.platformDefault, // Opens in browser on emulator
         );
-      } 
+      }
       // Last resort: try web URL directly
       else {
-        await launchUrl(
-          googleMapsUrl,
-          mode: LaunchMode.platformDefault,
-        );
+        await launchUrl(googleMapsUrl, mode: LaunchMode.platformDefault);
       }
     } catch (e) {
       // If all methods fail, show helpful error message
@@ -1300,7 +1081,6 @@ class BookingDetailScreen extends ConsumerWidget {
     return AppTheme.getSportColorFromType(sport);
   }
 
-
   Widget _buildGoogleStaticMap(
     BuildContext context,
     GeoPoint location,
@@ -1309,12 +1089,25 @@ class BookingDetailScreen extends ConsumerWidget {
   }) {
     final lat = location.latitude;
     final lng = location.longitude;
-    const apiKey = ApiKeys.googleMapsStatic;
+
+    // Safe API key access with fallback
+    String apiKey;
+    try {
+      apiKey = ApiKeys.googleMapsStatic;
+      if (apiKey.isEmpty) {
+        // No API key - show placeholder instead
+        return _buildMapPlaceholder(sport);
+      }
+    } catch (e) {
+      // Error accessing API key - show placeholder
+      return _buildMapPlaceholder(sport);
+    }
 
     // Generate Google Maps Static API URL
     // URL encoding for marker color (0xFF2E8B57 = green)
     const markerColor = '0x2E8B57'; // Removed the FF prefix for URL
-    final mapUrl = 'https://maps.googleapis.com/maps/api/staticmap'
+    final mapUrl =
+        'https://maps.googleapis.com/maps/api/staticmap'
         '?center=$lat,$lng'
         '&zoom=${hasLocation ? 17 : 15}' // Slightly wider zoom if using fallback location
         '&size=400x200'
@@ -1452,3 +1245,4 @@ class BookingDetailScreen extends ConsumerWidget {
   }
 }
 
+/// Countdown timer widget for booking expiration

@@ -40,13 +40,6 @@ class RoleGuards {
     return isStudent(user);
   }
 
-  /// Check if user can use split bill feature
-  /// Only students (not admins) can use split bill
-  static bool canUseSplitBill(UserModel? user) {
-    if (user == null) return false;
-    return user.isStudent && !isAdmin(user);
-  }
-
   /// Check if user can create tournaments
   /// Students and admins can create tournaments
   static bool canCreateTournament(UserModel? user) {
@@ -86,16 +79,6 @@ class RoleGuards {
   // ═══════════════════════════════════════════════════════════════════════════
   // BOOKING PERMISSIONS
   // ═══════════════════════════════════════════════════════════════════════════
-
-  /// Check if user can create split bill bookings
-  static bool canCreateSplitBillBooking(UserModel? user) {
-    return canUseSplitBill(user);
-  }
-
-  /// Check if user can join split bill bookings
-  static bool canJoinSplitBillBooking(UserModel? user) {
-    return canUseSplitBill(user);
-  }
 
   /// Check if user gets student pricing
   static bool getsStudentPricing(UserModel? user) {
@@ -183,7 +166,10 @@ class RoleGuards {
   }
 
   /// Check if user has all required capabilities
-  static bool hasAllCapabilities(UserModel? user, List<bool Function(UserModel?)> checks) {
+  static bool hasAllCapabilities(
+    UserModel? user,
+    List<bool Function(UserModel?)> checks,
+  ) {
     if (user == null) return false;
     return checks.every((check) => check(user));
   }

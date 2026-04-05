@@ -10,7 +10,7 @@ class SeedService {
   final FirebaseFirestore _firestore;
 
   SeedService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Seed all initial data (Facilities, Blackout Dates, Referee Jobs)
   /// Note: Users are NOT seeded automatically - use seedDemoAccounts() to create demo accounts
@@ -25,12 +25,11 @@ class SeedService {
   /// Clear facilities collection (removes old facilities)
   Future<void> clearFacilities() async {
     debugPrint('🗑️  Clearing old facilities...');
-    
+
     try {
-      final snapshot = await _firestore
-          .collection(AppConstants.facilitiesCollection)
-          .get();
-      
+      final snapshot =
+          await _firestore.collection(AppConstants.facilitiesCollection).get();
+
       if (snapshot.docs.isEmpty) {
         debugPrint('  ⊘ Facilities collection is already empty');
         return;
@@ -40,14 +39,14 @@ class SeedService {
       for (int i = 0; i < snapshot.docs.length; i += 500) {
         final batch = _firestore.batch();
         final batchDocs = snapshot.docs.skip(i).take(500);
-        
+
         for (final doc in batchDocs) {
           batch.delete(doc.reference);
         }
-        
+
         await batch.commit();
       }
-      
+
       debugPrint('  ✅ Cleared ${snapshot.docs.length} old facilities');
     } catch (e) {
       debugPrint('  ⚠️ Error clearing facilities: $e');
@@ -70,10 +69,14 @@ class SeedService {
       await _firestore
           .collection(AppConstants.facilitiesCollection)
           .doc(facility.id)
-          .set(facility.toFirestore()); // Use set() without merge to replace entirely
+          .set(
+            facility.toFirestore(),
+          ); // Use set() without merge to replace entirely
       debugPrint('  ✓ ${facility.name}');
       if (facility.location != null) {
-        debugPrint('    📍 Location: ${facility.location!.latitude}, ${facility.location!.longitude}');
+        debugPrint(
+          '    📍 Location: ${facility.location!.latitude}, ${facility.location!.longitude}',
+        );
       }
     }
 
@@ -93,7 +96,7 @@ class SeedService {
           location['latitude'] as double,
           location['longitude'] as double,
         );
-        
+
         await _firestore
             .collection(AppConstants.facilitiesCollection)
             .doc(facilityData['id'] as String)
@@ -107,13 +110,13 @@ class SeedService {
 
   /// Check if data is already seeded
   Future<bool> isSeeded() async {
-    final snapshot = await _firestore
-        .collection(AppConstants.facilitiesCollection)
-        .limit(1)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection(AppConstants.facilitiesCollection)
+            .limit(1)
+            .get();
     return snapshot.docs.isNotEmpty;
   }
-
 
   /// Clear all collections except users (preserves user accounts and their data)
   /// Safe for development/testing - does not affect user authentication
@@ -128,7 +131,8 @@ class SeedService {
       AppConstants.jobsCollection,
       AppConstants.meritRecordsCollection,
       AppConstants.transactionsCollection,
-      AppConstants.walletsCollection, // Wallets will be reset (users keep accounts)
+      AppConstants
+          .walletsCollection, // Wallets will be reset (users keep accounts)
       AppConstants.escrowCollection,
       AppConstants.blackoutDatesCollection,
       AppConstants.ratingsCollection,
@@ -142,7 +146,7 @@ class SeedService {
       try {
         final snapshot = await _firestore.collection(collection).get();
         final docCount = snapshot.docs.length;
-        
+
         if (docCount == 0) {
           debugPrint('  ⊘ $collection (already empty)');
           continue;
@@ -152,14 +156,14 @@ class SeedService {
         for (int i = 0; i < snapshot.docs.length; i += 500) {
           final batch = _firestore.batch();
           final batchDocs = snapshot.docs.skip(i).take(500);
-          
+
           for (final doc in batchDocs) {
             batch.delete(doc.reference);
           }
-          
+
           await batch.commit();
         }
-        
+
         totalDeleted += docCount;
         debugPrint('  ✓ Cleared $collection ($docCount documents)');
       } catch (e) {
@@ -171,7 +175,9 @@ class SeedService {
     debugPrint('✅ Data cleared successfully!');
     debugPrint('   - Total documents deleted: $totalDeleted');
     debugPrint('   - Users preserved: ${AppConstants.usersCollection}');
-    debugPrint('   - You can now run seedAll() to re-seed facilities, blackout dates, etc.');
+    debugPrint(
+      '   - You can now run seedAll() to re-seed facilities, blackout dates, etc.',
+    );
   }
 
   /// Clear ALL collections including users (COMPLETE RESET)
@@ -205,35 +211,37 @@ class SeedService {
       try {
         final readMsg = '  🔍 Reading $collection...';
         debugPrint(readMsg);
-        
+
         final snapshot = await _firestore.collection(collection).get();
         final docCount = snapshot.docs.length;
-        
+
         if (docCount == 0) {
           final emptyMsg = '  ⊘ $collection (already empty)';
           debugPrint(emptyMsg);
           continue;
         }
 
-        final deleteMsg = '  🗑️  Deleting $docCount documents from $collection...';
+        final deleteMsg =
+            '  🗑️  Deleting $docCount documents from $collection...';
         debugPrint(deleteMsg);
-        
+
         // Delete in batches (Firestore limit is 500 per batch)
         int deletedInCollection = 0;
         for (int i = 0; i < snapshot.docs.length; i += 500) {
           final batch = _firestore.batch();
           final batchDocs = snapshot.docs.skip(i).take(500);
-          
+
           for (final doc in batchDocs) {
             batch.delete(doc.reference);
           }
-          
+
           await batch.commit();
           deletedInCollection += batchDocs.length;
-          final batchMsg = '    ✓ Deleted batch: $deletedInCollection/$docCount';
+          final batchMsg =
+              '    ✓ Deleted batch: $deletedInCollection/$docCount';
           debugPrint(batchMsg);
         }
-        
+
         totalDeleted += docCount;
         final clearedMsg = '  ✅ Cleared $collection ($docCount documents)';
         debugPrint(clearedMsg);
@@ -274,8 +282,7 @@ class SeedService {
         'affectedFacilities': [
           'fac_football_stadium',
           'fac_football_padang_a',
-          'fac_futsal_complex_a',
-          'fac_futsal_complex_b',
+          'fac_futsal_kmr',
         ],
         'isActive': false, // Example of inactive blackout
         'createdAt': Timestamp.now(),
@@ -328,8 +335,8 @@ class SeedService {
         'payout_amount': AppConstants.refereeEarningsTournament,
         'status': JobStatus.open.code,
         'assigned_referee_id': null,
-        'facility_name': 'Gelanggang Futsal A',
-        'location': 'UPM Sports Complex',
+        'facility_name': 'KMR Futsal (Akademi Sukan UPM)',
+        'location': 'UPM Akademi Sukan',
         'notes': 'Tournament: Futsal League - Match 1',
         'createdAt': Timestamp.now(),
       },
@@ -365,7 +372,7 @@ class SeedService {
   Future<void> seedDemoAccounts() async {
     debugPrint('👤 Seeding demo accounts...');
     final auth = FirebaseAuth.instance;
-    
+
     // Ensure no user is logged in before seeding
     if (auth.currentUser != null) {
       await auth.signOut();
@@ -400,7 +407,10 @@ class SeedService {
         'matricNo': 'H789012',
         'role': UserRole.student, // Student who is also a referee
         'isStudent': true,
-        'badges': <String>[AppConstants.badgeRefFootball], // Verified referee badge - explicit type
+        'badges': <String>[
+          AppConstants.badgeRefFootball,
+          AppConstants.badgeRefTennis, // Added tennis certification
+        ], // Verified referee badges - explicit type
         'walletBalance': 150.0,
       },
       {
@@ -441,15 +451,16 @@ class SeedService {
           // If successful, user exists - get the UID
           final uid = auth.currentUser!.uid;
           await auth.signOut();
-          
+
           debugPrint('  ✓ Auth user exists: $email');
-          
+
           // Check if Firestore document exists
-          final userDoc = await _firestore
-              .collection(AppConstants.usersCollection)
-              .doc(uid)
-              .get();
-          
+          final userDoc =
+              await _firestore
+                  .collection(AppConstants.usersCollection)
+                  .doc(uid)
+                  .get();
+
           if (userDoc.exists) {
             // Update existing document with correct role/badges
             // Convert badges to ensure proper type
@@ -457,17 +468,19 @@ class SeedService {
                 .collection(AppConstants.usersCollection)
                 .doc(uid)
                 .update({
-              'role': role.code,
-              'isStudent': isStudent,
-              'badges': List<String>.from(badges), // Ensure proper type
-              'matric_no': matricNo,
-              'full_name': displayName,
-            });
-            
+                  'role': role.code,
+                  'isStudent': isStudent,
+                  'badges': List<String>.from(badges), // Ensure proper type
+                  'matric_no': matricNo,
+                  'full_name': displayName,
+                });
+
             // Update wallet if needed
             await _updateWallet(uid, walletBalance);
-            
-            debugPrint('    ✓ Updated Firestore document: $email (${role.displayName})');
+
+            debugPrint(
+              '    ✓ Updated Firestore document: $email (${role.displayName})',
+            );
             skipped++;
           } else {
             // Auth exists but no Firestore doc - create it
@@ -481,7 +494,9 @@ class SeedService {
               badges: badges,
               walletBalance: walletBalance,
             );
-            debugPrint('    ✓ Created Firestore document: $email (${role.displayName})');
+            debugPrint(
+              '    ✓ Created Firestore document: $email (${role.displayName})',
+            );
             created++;
           }
         } on FirebaseAuthException catch (e) {
@@ -489,17 +504,17 @@ class SeedService {
             // User doesn't exist in Auth or password is wrong - try to create new account
             try {
               debugPrint('  📝 Creating new account: $email');
-              
+
               final credential = await auth.createUserWithEmailAndPassword(
                 email: email,
                 password: password,
               );
-              
+
               final uid = credential.user!.uid;
-              
+
               // Update display name in Auth
               await credential.user!.updateDisplayName(displayName);
-              
+
               // Create Firestore document
               await _createUserDocument(
                 uid: uid,
@@ -511,16 +526,18 @@ class SeedService {
                 badges: badges,
                 walletBalance: walletBalance,
               );
-              
+
               debugPrint('    ✓ Created: $email (${role.displayName})');
               created++;
-              
+
               // Sign out after creating
               await auth.signOut();
             } on FirebaseAuthException catch (createError) {
               if (createError.code == 'email-already-in-use') {
                 // Account exists but we couldn't sign in - skip it
-                debugPrint('    ⚠️  Account exists but password may be different - skipping: $email');
+                debugPrint(
+                  '    ⚠️  Account exists but password may be different - skipping: $email',
+                );
                 skipped++;
               } else {
                 rethrow;
@@ -547,7 +564,9 @@ class SeedService {
     debugPrint('📋 Account Details:');
     debugPrint('   Public: ${AppConstants.demoPublicEmail} / Password123');
     debugPrint('   Student: ${AppConstants.demoStudentEmail} / Password123');
-    debugPrint('   Student(Referee): ${AppConstants.demoRefereeEmail} / Password123');
+    debugPrint(
+      '   Student(Referee): ${AppConstants.demoRefereeEmail} / Password123',
+    );
     debugPrint('   Admin: ${AppConstants.demoAdminEmail} / AdminPass123');
   }
 
@@ -563,7 +582,7 @@ class SeedService {
     required double walletBalance,
   }) async {
     final now = DateTime.now();
-    
+
     // Create user document
     final userModel = UserModel(
       uid: uid,
@@ -598,19 +617,17 @@ class SeedService {
 
   /// Update wallet balance
   Future<void> _updateWallet(String uid, double balance) async {
-    final walletDoc = await _firestore
-        .collection(AppConstants.walletsCollection)
-        .doc(uid)
-        .get();
-    
+    final walletDoc =
+        await _firestore
+            .collection(AppConstants.walletsCollection)
+            .doc(uid)
+            .get();
+
     if (walletDoc.exists) {
       await _firestore
           .collection(AppConstants.walletsCollection)
           .doc(uid)
-          .update({
-        'balance': balance,
-        'updatedAt': Timestamp.now(),
-      });
+          .update({'balance': balance, 'updatedAt': Timestamp.now()});
     } else {
       await _firestore.collection(AppConstants.walletsCollection).doc(uid).set({
         'userId': uid,
@@ -624,4 +641,3 @@ class SeedService {
     }
   }
 }
-

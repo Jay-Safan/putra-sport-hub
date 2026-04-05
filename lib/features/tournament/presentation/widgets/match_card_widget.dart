@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/tournament_team_model.dart';
+import 'referee_coverage_badge.dart';
 
 /// Single match card showing captain names and scores
 /// Minimalist design - captain names only
@@ -10,6 +13,7 @@ class MatchCardWidget extends StatelessWidget {
   final TournamentTeamModel? team2;
   final bool canUpdate;
   final VoidCallback? onTap;
+  final String? tournamentId;
 
   const MatchCardWidget({
     super.key,
@@ -18,6 +22,7 @@ class MatchCardWidget extends StatelessWidget {
     this.team2,
     this.canUpdate = false,
     this.onTap,
+    this.tournamentId,
   });
 
   @override
@@ -32,6 +37,11 @@ class MatchCardWidget extends StatelessWidget {
     final team2Name = team2?.captainName ?? 'TBD';
     final team1Won = winnerId != null && team1?.teamId == winnerId;
     final team2Won = winnerId != null && team2?.teamId == winnerId;
+
+    // Get match time if available
+    final matchStartTime = match['matchStartTime'] as Timestamp?;
+    final matchTime = matchStartTime?.toDate();
+    final timeFormat = DateFormat('h:mm a');
 
     return GestureDetector(
       onTap: canUpdate && !isCompleted ? onTap : null,
@@ -75,6 +85,13 @@ class MatchCardWidget extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
+                // Referee coverage badge
+                if (tournamentId != null && match['matchNumber'] != null)
+                  RefereeCoverageBadge(
+                    tournamentId: tournamentId!,
+                    matchNumber: match['matchNumber'] as int,
+                  ),
+                const SizedBox(width: 8),
                 if (canUpdate && !isCompleted)
                   Icon(
                     Icons.edit_outlined,
@@ -84,6 +101,29 @@ class MatchCardWidget extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
+            
+            // Match time display
+            if (matchTime != null) ...[
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    timeFormat.format(matchTime),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
             
             // Team 1
             _buildTeamRow(

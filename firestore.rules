@@ -23,19 +23,9 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
     }
     
-    // Helper: Check if user is participant in split bill booking
-    function isSplitBillParticipant(bookingData) {
-      return isAuth() && 
-             bookingData.splitBillParticipants != null &&
-             request.auth.uid in bookingData.splitBillParticipants.keys();
-    }
-    
-    // Helper: Check if user is booking organizer or participant
-    function isBookingOwnerOrParticipant(bookingData) {
-      return isAuth() && (
-        bookingData.userId == request.auth.uid ||
-        isSplitBillParticipant(bookingData)
-      );
+    // Helper: Check if user owns the booking
+    function isBookingOwner(bookingData) {
+      return isAuth() && bookingData.userId == request.auth.uid;
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
@@ -66,13 +56,11 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read: if isAuth() && (
         resource.data.userId == request.auth.uid ||
-        isSplitBillParticipant(resource.data) ||
         isAdmin()
       );
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuth() && (
         resource.data.userId == request.auth.uid ||
-        isSplitBillParticipant(resource.data) ||
         isAdmin()
       );
       allow delete: if isAuth() && (

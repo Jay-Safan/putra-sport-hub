@@ -253,22 +253,13 @@ class _CreateTournamentScreenState
         const SizedBox(height: 32),
 
         // Sport Cards
-        _buildSportCard(
-          SportType.football,
-          AppTheme.footballOrange,
-        ),
+        _buildSportCard(SportType.football, AppTheme.footballOrange),
         const SizedBox(height: 16),
         _buildSportCard(SportType.futsal, AppTheme.futsalBlue),
         const SizedBox(height: 16),
-        _buildSportCard(
-          SportType.badminton,
-          AppTheme.badmintonPurple,
-        ),
+        _buildSportCard(SportType.badminton, AppTheme.badmintonPurple),
         const SizedBox(height: 16),
-        _buildSportCard(
-          SportType.tennis,
-          AppTheme.tennisGreen,
-        ),
+        _buildSportCard(SportType.tennis, AppTheme.tennisGreen),
       ],
     );
   }
@@ -320,11 +311,7 @@ class _CreateTournamentScreenState
                 color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: SportIcon(
-                sport: sport,
-                color: Colors.white,
-                size: 32,
-              ),
+              child: SportIcon(sport: sport, color: Colors.white, size: 32),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -640,9 +627,9 @@ class _CreateTournamentScreenState
         const SizedBox(height: 16),
         _buildFormatCard(
           TournamentFormat.fourTeamGroup,
-          '4-Team Group Stage',
-          'Round-robin group matches\nGreat for smaller events',
-          Icons.groups,
+          '4-Team Knockout',
+          'Semifinal matches + Final\nFast elimination format',
+          Icons.military_tech,
         ),
       ],
     );
@@ -878,7 +865,11 @@ class _CreateTournamentScreenState
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, color: AppTheme.warningAmber, size: 24),
+              const Icon(
+                Icons.info_outline,
+                color: AppTheme.warningAmber,
+                size: 24,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -1212,7 +1203,7 @@ class _CreateTournamentScreenState
             ),
             const SizedBox(height: 32),
           ],
-          
+
           // Visual Timeline Selection
           Text(
             'Select Tournament Time',
@@ -1243,9 +1234,6 @@ class _CreateTournamentScreenState
       ],
     );
   }
-
-
-
 
   bool _checkTimeRangeAvailability(
     List<dt.TimeSlot> slots,
@@ -1391,7 +1379,6 @@ class _CreateTournamentScreenState
     return bestMatch;
   }
 
-
   /// Build Visual Timeline - Shows entire day with bookings and allows range selection
   Widget _buildVisualTimeline(FacilityModel facility, List<dt.TimeSlot> slots) {
     // Define day hours (8 AM to 10 PM = 14 hours)
@@ -1511,8 +1498,7 @@ class _CreateTournamentScreenState
                                   ),
                                 ),
                               );
-                            })
-                            ,
+                            }),
 
                         // Selected range (green highlight)
                         if (_timelineStartTime != null &&
@@ -2193,8 +2179,6 @@ class _CreateTournamentScreenState
     );
   }
 
-
-
   Widget _buildDatePickerCard({
     required String title,
     required DateTime date,
@@ -2260,7 +2244,6 @@ class _CreateTournamentScreenState
       ),
     );
   }
-
 
   Widget _buildDetailsForm() {
     final user = ref.watch(currentUserProvider).valueOrNull;
@@ -2441,7 +2424,9 @@ class _CreateTournamentScreenState
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Entry Fee',
                 helperText: 'Leave empty for a free tournament',
@@ -2516,7 +2501,9 @@ class _CreateTournamentScreenState
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: 'First Place Prize (Optional)',
                   helperText: 'Prize amount for the winner',
@@ -2570,7 +2557,8 @@ class _CreateTournamentScreenState
                 ),
                 onChanged: (value) {
                   setState(() {
-                    _firstPlacePrize = value.isEmpty ? null : double.tryParse(value);
+                    _firstPlacePrize =
+                        value.isEmpty ? null : double.tryParse(value);
                   });
                 },
               ),
@@ -2590,7 +2578,9 @@ class _CreateTournamentScreenState
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Organizer Fee (Optional)',
                   helperText: 'Your commission for organizing',
@@ -2644,7 +2634,8 @@ class _CreateTournamentScreenState
                 ),
                 onChanged: (value) {
                   setState(() {
-                    _organizerFee = value.isEmpty ? null : double.tryParse(value);
+                    _organizerFee =
+                        value.isEmpty ? null : double.tryParse(value);
                   });
                 },
               ),
@@ -2682,7 +2673,9 @@ class _CreateTournamentScreenState
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryGreenLight.withValues(alpha: 0.2),
+                        color: AppTheme.primaryGreenLight.withValues(
+                          alpha: 0.2,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -2738,7 +2731,7 @@ class _CreateTournamentScreenState
           return 1; // Chair umpire
       }
     }
-    
+
     final refereesRequired = getRefereesRequired(_selectedSport);
     const refereeFeePerMatch = AppConstants.refereeEarningsTournament;
     final totalRefereeCost = refereesRequired * refereeFeePerMatch;
@@ -2820,7 +2813,7 @@ class _CreateTournamentScreenState
     final entryFee = _entryFee ?? 0;
     final maxTeams = _selectedFormat.teamCount;
     final totalRevenue = entryFee * maxTeams;
-    
+
     // Get referees required based on sport
     int getRefereesRequired(SportType sport) {
       switch (sport) {
@@ -2834,10 +2827,11 @@ class _CreateTournamentScreenState
           return 1;
       }
     }
-    
+
     final refereesRequired = getRefereesRequired(_selectedSport);
-    final refereeFeeTotal = refereesRequired * AppConstants.refereeEarningsTournament;
-    
+    final refereeFeeTotal =
+        refereesRequired * AppConstants.refereeEarningsTournament;
+
     final prize = _firstPlacePrize ?? 0;
     final organizerFee = _organizerFee ?? 0;
     final totalDistribution = prize + organizerFee;
@@ -2854,13 +2848,16 @@ class _CreateTournamentScreenState
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                (isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed).withValues(alpha: 0.15),
-                (isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed).withValues(alpha: 0.05),
+                (isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed)
+                    .withValues(alpha: 0.15),
+                (isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed)
+                    .withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: (isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed).withValues(alpha: 0.3),
+              color: (isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed)
+                  .withValues(alpha: 0.3),
               width: isValid ? 1 : 1.5,
             ),
           ),
@@ -2872,12 +2869,20 @@ class _CreateTournamentScreenState
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: (isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed).withValues(alpha: 0.2),
+                      color: (isValid
+                              ? AppTheme.primaryGreenLight
+                              : AppTheme.errorRed)
+                          .withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      isValid ? Icons.account_balance_rounded : Icons.warning_rounded,
-                      color: isValid ? AppTheme.primaryGreenLight : AppTheme.errorRed,
+                      isValid
+                          ? Icons.account_balance_rounded
+                          : Icons.warning_rounded,
+                      color:
+                          isValid
+                              ? AppTheme.primaryGreenLight
+                              : AppTheme.errorRed,
                       size: 24,
                     ),
                   ),
@@ -2896,7 +2901,7 @@ class _CreateTournamentScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          isValid 
+                          isValid
                               ? 'Breakdown of tournament finances'
                               : 'Prize + Organizer Fee exceeds available funds',
                           style: TextStyle(
@@ -3383,34 +3388,8 @@ class _CreateTournamentScreenState
         // Invalidate providers to refresh tournament lists
         ref.invalidate(publicTournamentsProvider);
         ref.invalidate(userTournamentsProvider);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(child: Text('Tournament created successfully!')),
-              ],
-            ),
-            backgroundColor: AppTheme.successGreen,
-            behavior: SnackBarBehavior.floating,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-            ),
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 2),
-            action: SnackBarAction(
-              label: 'View',
-              textColor: Colors.white,
-              onPressed: () {
-                context.push('/tournament/${result.tournament!.id}');
-              },
-            ),
-          ),
-        );
-        // Navigate to tournament detail (user can also go home from there)
-        context.push('/tournament/${result.tournament!.id}');
+
+        _showTournamentCreatedToast(context, result.tournament!.id);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3432,5 +3411,114 @@ class _CreateTournamentScreenState
         );
       }
     }
+  }
+
+  void _showTournamentCreatedToast(BuildContext context, String tournamentId) {
+    OverlayEntry? overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder:
+          (context) => Positioned(
+            bottom: 48,
+            left: 24,
+            right: 24,
+            child: Material(
+              color: Colors.transparent,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 450),
+                curve: Curves.easeOutBack,
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 24 * (1 - value)),
+                    child: Opacity(
+                      opacity: value.clamp(0.0, 1.0),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Tournament Created!',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Share the code so others can join',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+
+    // Auto-dismiss after 2.5 seconds
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      overlayEntry?.remove();
+      overlayEntry = null;
+    });
+
+    // Navigate after short delay so toast is visible on the next screen too
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (context.mounted) {
+        context.push('/tournament/$tournamentId');
+      }
+    });
   }
 }

@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import '../core/config/api_keys.dart';
+import '../core/utils/error_handler.dart';
 
 /// Service for handling Cloudinary image uploads
 ///
@@ -95,7 +96,6 @@ class StorageService {
         final secureUrl = data['secure_url'] as String?;
 
         if (secureUrl != null) {
-          debugPrint('✅ Profile image uploaded to Cloudinary: $secureUrl');
           return secureUrl;
         } else {
           throw Exception(
@@ -110,8 +110,9 @@ class StorageService {
         );
       }
     } catch (e) {
-      debugPrint('❌ Cloudinary upload error: $e');
-      rethrow;
+      throw Exception(
+        ErrorHandler.getUserFriendlyErrorMessage(e, context: 'upload'),
+      );
     }
   }
 

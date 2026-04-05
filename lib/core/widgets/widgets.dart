@@ -11,5 +11,3 @@ export 'minimalist_loaders.dart';
 export 'qr_display_widget.dart';
 export 'qr_scanner_widget.dart';
 export 'shimmer_loading.dart';
-export 'split_bill_share.dart';
-

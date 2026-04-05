@@ -57,7 +57,8 @@ class TournamentBracketWidget extends ConsumerWidget {
     }
 
     final bracketData = tournament.bracketData!;
-    final matches = (bracketData['matches'] as List<dynamic>?)
+    final matches =
+        (bracketData['matches'] as List<dynamic>?)
             ?.map((m) => Map<String, dynamic>.from(m))
             .toList() ??
         [];
@@ -78,25 +79,29 @@ class TournamentBracketWidget extends ConsumerWidget {
     }
 
     // Group matches by round
-    final quarterFinals = matches
-        .where((m) => m['round'] == 'QUARTER_FINAL')
-        .toList()
-      ..sort((a, b) => (a['matchNumber'] as int).compareTo(b['matchNumber'] as int));
+    final quarterFinals =
+        matches.where((m) => m['round'] == 'QUARTER_FINAL').toList()..sort(
+          (a, b) =>
+              (a['matchNumber'] as int).compareTo(b['matchNumber'] as int),
+        );
 
-    final semiFinals = matches
-        .where((m) => m['round'] == 'SEMI_FINAL')
-        .toList()
-      ..sort((a, b) => (a['matchNumber'] as int).compareTo(b['matchNumber'] as int));
+    final semiFinals =
+        matches.where((m) => m['round'] == 'SEMI_FINAL').toList()..sort(
+          (a, b) =>
+              (a['matchNumber'] as int).compareTo(b['matchNumber'] as int),
+        );
 
-    final finalMatches = matches
-        .where((m) => m['round'] == 'FINAL')
-        .toList()
-      ..sort((a, b) => (a['matchNumber'] as int).compareTo(b['matchNumber'] as int));
+    final semifinalMatches =
+        matches.where((m) => m['round'] == 'SEMIFINAL').toList()..sort(
+          (a, b) =>
+              (a['matchNumber'] as int).compareTo(b['matchNumber'] as int),
+        );
 
-    final groupStage = matches
-        .where((m) => m['round'] == 'GROUP_STAGE')
-        .toList()
-      ..sort((a, b) => (a['matchNumber'] as int).compareTo(b['matchNumber'] as int));
+    final finalMatches =
+        matches.where((m) => m['round'] == 'FINAL').toList()..sort(
+          (a, b) =>
+              (a['matchNumber'] as int).compareTo(b['matchNumber'] as int),
+        );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -106,11 +111,7 @@ class TournamentBracketWidget extends ConsumerWidget {
           // Header
           Row(
             children: [
-              const Icon(
-                Icons.tour,
-                color: AppTheme.primaryGreen,
-                size: 24,
-              ),
+              const Icon(Icons.tour, color: AppTheme.primaryGreen, size: 24),
               const SizedBox(width: 12),
               const Text(
                 'Tournament Bracket',
@@ -123,7 +124,10 @@ class TournamentBracketWidget extends ConsumerWidget {
               const Spacer(),
               if (canUpdate)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -149,25 +153,43 @@ class TournamentBracketWidget extends ConsumerWidget {
             if (quarterFinals.isNotEmpty) ...[
               _buildRoundHeader('Quarter-Finals'),
               const SizedBox(height: 12),
-              ...quarterFinals.map((match) => _buildMatchCard(context, ref, match)),
+              ...quarterFinals.map(
+                (match) => _buildMatchCard(context, ref, match),
+              ),
               const SizedBox(height: 32),
             ],
             if (semiFinals.isNotEmpty) ...[
               _buildRoundHeader('Semi-Finals'),
               const SizedBox(height: 12),
-              ...semiFinals.map((match) => _buildMatchCard(context, ref, match)),
+              ...semiFinals.map(
+                (match) => _buildMatchCard(context, ref, match),
+              ),
               const SizedBox(height: 32),
             ],
             if (finalMatches.isNotEmpty) ...[
               _buildRoundHeader('Final'),
               const SizedBox(height: 12),
-              ...finalMatches.map((match) => _buildMatchCard(context, ref, match)),
+              ...finalMatches.map(
+                (match) => _buildMatchCard(context, ref, match),
+              ),
             ],
           ] else if (tournament.format == TournamentFormat.fourTeamGroup) ...[
-            // 4-Team Round-Robin
-            _buildRoundHeader('Group Stage'),
-            const SizedBox(height: 12),
-            ...groupStage.map((match) => _buildMatchCard(context, ref, match)),
+            // 4-Team Knockout
+            if (semifinalMatches.isNotEmpty) ...[
+              _buildRoundHeader('Semifinals'),
+              const SizedBox(height: 12),
+              ...semifinalMatches.map(
+                (match) => _buildMatchCard(context, ref, match),
+              ),
+              const SizedBox(height: 24),
+            ],
+            if (finalMatches.isNotEmpty) ...[
+              _buildRoundHeader('Final'),
+              const SizedBox(height: 12),
+              ...finalMatches.map(
+                (match) => _buildMatchCard(context, ref, match),
+              ),
+            ],
           ],
         ],
       ),
@@ -185,29 +207,36 @@ class TournamentBracketWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildMatchCard(BuildContext context, WidgetRef ref, Map<String, dynamic> match) {
+  Widget _buildMatchCard(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> match,
+  ) {
     // Get teams by ID
     final team1Id = match['team1Id'] as String?;
     final team2Id = match['team2Id'] as String?;
 
-    final team1 = team1Id != null
-        ? tournament.teams.firstWhere(
-            (t) => t.teamId == team1Id,
-            orElse: () => tournament.teams.first, // Fallback
-          )
-        : null;
-    final team2 = team2Id != null
-        ? tournament.teams.firstWhere(
-            (t) => t.teamId == team2Id,
-            orElse: () => tournament.teams.first, // Fallback
-          )
-        : null;
+    final team1 =
+        team1Id != null
+            ? tournament.teams.firstWhere(
+              (t) => t.teamId == team1Id,
+              orElse: () => tournament.teams.first, // Fallback
+            )
+            : null;
+    final team2 =
+        team2Id != null
+            ? tournament.teams.firstWhere(
+              (t) => t.teamId == team2Id,
+              orElse: () => tournament.teams.first, // Fallback
+            )
+            : null;
 
     return MatchCardWidget(
       match: match,
       team1: team1,
       team2: team2,
       canUpdate: canUpdate,
+      tournamentId: tournament.id,
       onTap: () => _showUpdateMatchDialog(context, ref, match),
     );
   }
@@ -219,14 +248,15 @@ class TournamentBracketWidget extends ConsumerWidget {
   ) async {
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => UpdateMatchDialog(
-        tournament: tournament,
-        match: match,
-        onUpdated: () {
-          // Refresh tournament data
-          ref.invalidate(tournamentByIdProvider(tournament.id));
-        },
-      ),
+      builder:
+          (dialogContext) => UpdateMatchDialog(
+            tournament: tournament,
+            match: match,
+            onUpdated: () {
+              // Refresh tournament data
+              ref.invalidate(tournamentByIdProvider(tournament.id));
+            },
+          ),
     );
   }
 }

@@ -173,9 +173,7 @@ class ShimmerBookingTicket extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Column(
           children: [
@@ -252,9 +250,10 @@ class ShimmerBookingTicket extends StatelessWidget {
                   child: Container(
                     height: 2,
                     margin: const EdgeInsets.symmetric(horizontal: 2),
-                    color: index.isEven
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.transparent,
+                    color:
+                        index.isEven
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.transparent,
                   ),
                 ),
               ),
@@ -410,7 +409,7 @@ class ShimmerWalletCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
@@ -461,9 +460,7 @@ class ShimmerWeatherPill extends StatelessWidget {
               ],
             ),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.2),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -506,7 +503,10 @@ class ShimmerWeatherPill extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -948,10 +948,13 @@ class ShimmerProfileLoading extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           // Cards shimmer
-          ...List.generate(3, (index) => const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: ShimmerCard(height: 100, borderRadius: 20),
-              )),
+          ...List.generate(
+            3,
+            (index) => const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: ShimmerCard(height: 100, borderRadius: 20),
+            ),
+          ),
         ],
       ),
     );

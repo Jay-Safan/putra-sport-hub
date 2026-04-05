@@ -38,7 +38,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    final result = await ref.read(authServiceProvider).signInWithEmail(
+    final result = await ref
+        .read(authServiceProvider)
+        .signInWithEmail(
           email: _emailController.text,
           password: _passwordController.text,
         );
@@ -49,7 +51,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (result.success) {
       // Don't navigate manually - let router handle navigation based on auth state
     } else {
-      final errorMessage = result.errorMessage ?? 'Unable to sign in. Please check your credentials and try again.';
+      final errorMessage =
+          result.errorMessage ??
+          'Unable to sign in. Please check your credentials and try again.';
       ref.read(lastLoginErrorProvider.notifier).state = errorMessage;
     }
   }
@@ -58,15 +62,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     // Watch for persisted login error and show it
     final lastError = ref.watch(lastLoginErrorProvider);
-    
+
     if (lastError != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && lastError == ref.read(lastLoginErrorProvider)) {
           final errorToShow = ref.read(lastLoginErrorProvider);
           ref.read(lastLoginErrorProvider.notifier).state = null;
-          
+
           final scaffoldMessenger = ScaffoldMessenger.of(context);
-          
+
           Future.delayed(const Duration(milliseconds: 500), () {
             if (!mounted || errorToShow == null) return;
             scaffoldMessenger.clearSnackBars();
@@ -74,12 +78,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               SnackBar(
                 content: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         errorToShow,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -98,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         }
       });
     }
-    
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -117,69 +128,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Stack(
           children: [
             // Animated background orbs - ignore pointer events
-            IgnorePointer(
-              child: _buildBackgroundOrbs(),
-            ),
+            IgnorePointer(child: _buildBackgroundOrbs()),
 
             // Main content
             SafeArea(
-              child: Builder(
-                builder: (context) {
-                  final authState = ref.watch(authStateProvider);
-                  final currentUser = ref.watch(currentUserProvider);
-                  final isAuthenticating = authState.valueOrNull != null && currentUser.isLoading;
-                  
-                  if (isAuthenticating) {
-                    return const Center(
-                      child: InlineLoader(
-                        size: 32,
-                        strokeWidth: 3,
-                      ),
-                    );
-                  }
-                  
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 40),
-                        
-                        // Logo & Branding - Hero entrance
-                        _buildHeader()
-                            .animate()
-                            .fadeIn(duration: 700.ms, curve: Curves.easeOut)
-                            .scale(
-                              begin: const Offset(0.8, 0.8),
-                              end: const Offset(1, 1),
-                              duration: 700.ms,
-                              curve: Curves.easeOutBack,
-                            ),
-                        
-                        const SizedBox(height: 48),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 40),
 
-                        // Login Form Card - Slide up with fade
-                        _buildLoginCard()
-                            .animate()
-                            .fadeIn(duration: 600.ms, delay: 300.ms, curve: Curves.easeOut)
-                            .slideY(
-                              begin: 0.15,
-                              end: 0,
-                              duration: 600.ms,
-                              delay: 300.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
-                        
-                        const SizedBox(height: 24),
+                    // Logo & Branding - Hero entrance
+                    _buildHeader()
+                        .animate()
+                        .fadeIn(duration: 700.ms, curve: Curves.easeOut)
+                        .scale(
+                          begin: const Offset(0.8, 0.8),
+                          end: const Offset(1, 1),
+                          duration: 700.ms,
+                          curve: Curves.easeOutBack,
+                        ),
 
-                        // Sign Up Link - Fade in last
-                        _buildSignUpLink()
-                            .animate()
-                            .fadeIn(duration: 500.ms, delay: 600.ms, curve: Curves.easeOut),
-                      ],
+                    const SizedBox(height: 48),
+
+                    // Login Form Card - Slide up with fade
+                    _buildLoginCard()
+                        .animate()
+                        .fadeIn(
+                          duration: 600.ms,
+                          delay: 300.ms,
+                          curve: Curves.easeOut,
+                        )
+                        .slideY(
+                          begin: 0.15,
+                          end: 0,
+                          duration: 600.ms,
+                          delay: 300.ms,
+                          curve: Curves.easeOutCubic,
+                        ),
+
+                    const SizedBox(height: 24),
+
+                    // Sign Up Link - Fade in last
+                    _buildSignUpLink().animate().fadeIn(
+                      duration: 500.ms,
+                      delay: 600.ms,
+                      curve: Curves.easeOut,
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
             ),
           ],
@@ -196,18 +194,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           top: -100,
           right: -80,
           child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.primaryGreen.withValues(alpha: 0.3),
-                  AppTheme.primaryGreen.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.3),
+                      AppTheme.primaryGreen.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -222,18 +220,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           bottom: 100,
           left: -100,
           child: Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.upmRed.withValues(alpha: 0.2),
-                  AppTheme.upmRed.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.upmRed.withValues(alpha: 0.2),
+                      AppTheme.upmRed.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -248,18 +246,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           top: 350,
           right: 50,
           child: Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.accentGold.withValues(alpha: 0.15),
-                  AppTheme.accentGold.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.accentGold.withValues(alpha: 0.15),
+                      AppTheme.accentGold.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -360,9 +358,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: Colors.white,
                   ),
                 ).cascadeIn(index: 0, baseDelay: 500.ms),
-                
+
                 const SizedBox(height: 6),
-                
+
                 Text(
                   'Sign in to continue your journey',
                   style: TextStyle(
@@ -370,7 +368,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     fontSize: 14,
                   ),
                 ).cascadeIn(index: 1, baseDelay: 500.ms),
-                
+
                 const SizedBox(height: 32),
 
                 // Email Field - Staggered index 2
@@ -385,7 +383,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     return result.isValid ? null : result.errorMessage;
                   },
                 ).cascadeIn(index: 2, baseDelay: 500.ms),
-                
+
                 const SizedBox(height: 20),
 
                 // Password Field - Staggered index 3
@@ -407,17 +405,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     return null;
                   },
                 ).cascadeIn(index: 3, baseDelay: 500.ms),
-                
+
                 const SizedBox(height: 36),
 
                 // Login Button - Staggered index 4
                 _buildLoginButton().cascadeIn(index: 4, baseDelay: 500.ms),
-                
+
                 const SizedBox(height: 24),
 
                 // Demo Accounts Section - Staggered index 5
                 _buildDemoAccounts().cascadeIn(index: 5, baseDelay: 500.ms),
-                
+
                 const SizedBox(height: 16),
 
                 // Student Email Info - Staggered index 6
@@ -457,10 +455,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: const Color(0xFFE0E0E0),
-              width: 1.5,
-            ),
+            border: Border.all(color: const Color(0xFFE0E0E0), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),
@@ -482,29 +477,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             validator: validator,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 14,
-              ),
-              prefixIcon: Icon(
-                icon,
-                color: AppTheme.primaryGreen,
-              ),
-              suffixIcon: isPassword
-                  ? Semantics(
-                      label: obscureText ? 'Show password' : 'Hide password',
-                      button: true,
-                      child: IconButton(
-                        icon: Icon(
-                          obscureText
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: Colors.grey.shade600,
+              hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+              prefixIcon: Icon(icon, color: AppTheme.primaryGreen),
+              suffixIcon:
+                  isPassword
+                      ? Semantics(
+                        label: obscureText ? 'Show password' : 'Hide password',
+                        button: true,
+                        child: IconButton(
+                          icon: Icon(
+                            obscureText
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: Colors.grey.shade600,
+                          ),
+                          onPressed: onToggleObscure,
                         ),
-                        onPressed: onToggleObscure,
-                      ),
-                    )
-                  : null,
+                      )
+                      : null,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
               errorStyle: const TextStyle(
@@ -521,13 +511,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildLoginButton() {
     final authState = ref.watch(authStateProvider);
     final currentUser = ref.watch(currentUserProvider);
-    final isAuthenticating = authState.valueOrNull != null && currentUser.isLoading;
+    final isAuthenticating =
+        authState.valueOrNull != null && currentUser.isLoading;
     final shouldDisableButton = _isLoading || isAuthenticating;
-    
+
     return AnimatedPressableButton(
       onTap: shouldDisableButton ? null : _handleLogin,
       semanticLabel: 'Sign in to your account',
-      semanticHint: shouldDisableButton ? 'Please wait while signing in' : 'Double tap to sign in',
+      semanticHint:
+          shouldDisableButton
+              ? 'Please wait while signing in'
+              : 'Double tap to sign in',
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -545,20 +539,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ],
         ),
         child: Center(
-          child: shouldDisableButton
-              ? const InlineLoader(
-                  size: 22,
-                  strokeWidth: 2.5,
-                )
-              : const Text(
-                  'Sign In',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+          child:
+              shouldDisableButton
+                  ? const InlineLoader(size: 22, strokeWidth: 2.5)
+                  : const Text(
+                    'Sign In',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
         ),
       ),
     );
@@ -645,9 +637,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           decoration: BoxDecoration(
             color: AppTheme.infoBlue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: AppTheme.infoBlue.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: AppTheme.infoBlue.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,13 +664,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              _buildDemoAccountDetail('Public', 'public@example.com', 'Password123'),
+              _buildDemoAccountDetail(
+                'Public',
+                'public@example.com',
+                'Password123',
+              ),
               const SizedBox(height: 4),
-              _buildDemoAccountDetail('Student', 'ali@student.upm.edu.my', 'Password123'),
+              _buildDemoAccountDetail(
+                'Student',
+                'ali@student.upm.edu.my',
+                'Password123',
+              ),
               const SizedBox(height: 4),
-              _buildDemoAccountDetail('Student (Referee)', 'haziq@student.upm.edu.my', 'Password123'),
+              _buildDemoAccountDetail(
+                'Student (Referee)',
+                'haziq@student.upm.edu.my',
+                'Password123',
+              ),
               const SizedBox(height: 4),
-              _buildDemoAccountDetail('Admin', 'admin@upm.edu.my', 'AdminPass123'),
+              _buildDemoAccountDetail(
+                'Admin',
+                'admin@upm.edu.my',
+                'AdminPass123',
+              ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -727,12 +733,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return AnimatedPressableButton(
       onTap: () {
         ScaffoldMessenger.of(context).clearSnackBars();
-        
+
         setState(() {
           _emailController.text = email;
           _passwordController.text = password;
         });
-        
+
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -766,12 +772,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: color.withValues(alpha: 0.4),
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Row(
-          mainAxisAlignment: fullWidth ? MainAxisAlignment.center : MainAxisAlignment.start,
+          mainAxisAlignment:
+              fullWidth ? MainAxisAlignment.center : MainAxisAlignment.start,
           mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
           children: [
             Icon(icon, color: color, size: 18),
@@ -817,9 +822,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           decoration: BoxDecoration(
             color: AppTheme.infoBlue.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppTheme.infoBlue.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: AppTheme.infoBlue.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -896,9 +899,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Flexible(
             child: Text(
               "Don't have an account? ",
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               overflow: TextOverflow.ellipsis,
             ),
           ),

@@ -13,7 +13,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables (API keys, secrets, etc.) from .env
-  await dotenv.load(fileName: '.env');
+  // Web doesn't support .env files, so gracefully handle the error
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env file not found (normal for web) - env vars will be empty
+    // For web, set env vars via other means (e.g., Firebase config)
+  }
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(

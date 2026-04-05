@@ -17,7 +17,8 @@ class JoinTournamentScreen extends ConsumerStatefulWidget {
   const JoinTournamentScreen({super.key, required this.tournamentId});
 
   @override
-  ConsumerState<JoinTournamentScreen> createState() => _JoinTournamentScreenState();
+  ConsumerState<JoinTournamentScreen> createState() =>
+      _JoinTournamentScreenState();
 }
 
 class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
@@ -33,7 +34,9 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tournamentAsync = ref.watch(tournamentByIdProvider(widget.tournamentId));
+    final tournamentAsync = ref.watch(
+      tournamentByIdProvider(widget.tournamentId),
+    );
     final user = ref.watch(currentUserProvider).valueOrNull;
 
     if (user == null) {
@@ -86,11 +89,16 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
             return _buildAlreadyRegistered();
           }
 
+          if (tournament.isUserReferee(user.uid)) {
+            return _buildCannotJoinAsReferee();
+          }
+
           return _buildJoinForm(tournament, user);
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryGreen),
-        ),
+        loading:
+            () => const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+            ),
         error: (error, stack) => _buildErrorState(error.toString()),
       ),
     );
@@ -163,9 +171,60 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
               onPressed: () => context.pop(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryGreen,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
               ),
               child: const Text('Go Back'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCannotJoinAsReferee() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.sports_outlined,
+              size: 64,
+              color: AppTheme.warningAmber,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Cannot Join as Player',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You are already registered as a referee for this tournament',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.warningAmber,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+              ),
+              child: const Text(
+                'Go Back',
+                style: TextStyle(color: Colors.black),
+              ),
             ),
           ],
         ),
@@ -253,7 +312,9 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
                       gradient: LinearGradient(
                         colors: [
                           _getSportColor(tournament.sport),
-                          _getSportColor(tournament.sport).withValues(alpha: 0.7),
+                          _getSportColor(
+                            tournament.sport,
+                          ).withValues(alpha: 0.7),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
@@ -290,7 +351,8 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
                   ),
                 ],
               ),
-              if (tournament.description != null && tournament.description!.isNotEmpty) ...[
+              if (tournament.description != null &&
+                  tournament.description!.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
                   tournament.description!,
@@ -305,7 +367,8 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
                 children: [
                   _buildInfoChip(
                     icon: Icons.group,
-                    label: '${tournament.currentTeams}/${tournament.maxTeams} teams',
+                    label:
+                        '${tournament.currentTeams}/${tournament.maxTeams} teams',
                   ),
                   const SizedBox(width: 12),
                   _buildInfoChip(
@@ -505,10 +568,16 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _isLoading ? null : () => _handleJoinTournament(context, tournament),
+              onTap:
+                  _isLoading
+                      ? null
+                      : () => _handleJoinTournament(context, tournament),
               borderRadius: BorderRadius.circular(18),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 20,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -541,7 +610,9 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -612,11 +683,29 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
     );
   }
 
-  Future<void> _handleJoinTournament(BuildContext context, TournamentModel tournament) async {
+  Future<void> _handleJoinTournament(
+    BuildContext context,
+    TournamentModel tournament,
+  ) async {
     if (!_formKey.currentState!.validate()) return;
 
     final user = ref.read(currentUserProvider).valueOrNull;
     if (user == null) return;
+
+    // Check if user is already a referee for this tournament
+    if (tournament.isUserReferee(user.uid)) {
+      if (!mounted || !context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cannot join as player - you are already registered as a referee',
+          ),
+          backgroundColor: AppTheme.errorRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -641,12 +730,12 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
         if (!paymentResult.success) {
           if (!mounted || !context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(paymentResult.errorMessage ?? 'Payment failed'),
-                backgroundColor: AppTheme.errorRed,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            SnackBar(
+              content: Text(paymentResult.errorMessage ?? 'Payment failed'),
+              backgroundColor: AppTheme.errorRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           setState(() => _isLoading = false);
           return;
         }
@@ -677,7 +766,8 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
         await SuccessAnimationDialog.show(
           context,
           message: 'Successfully Joined!',
-          subtitle: 'Team "${_teamNameController.text.trim()}" is now registered',
+          subtitle:
+              'Team "${_teamNameController.text.trim()}" is now registered',
           color: AppTheme.primaryGreen,
           delay: const Duration(milliseconds: 1800),
         );
@@ -711,5 +801,4 @@ class _JoinTournamentScreenState extends ConsumerState<JoinTournamentScreen> {
   Color _getSportColor(SportType sport) {
     return AppTheme.getSportColorFromType(sport);
   }
-
 }

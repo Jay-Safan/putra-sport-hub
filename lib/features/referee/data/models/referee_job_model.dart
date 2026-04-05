@@ -63,6 +63,27 @@ class RefereeJobModel {
   /// Get remaining slots
   int get remainingSlots => refereesRequired - assignedReferees.length;
 
+  /// Get assignment progress (e.g., "2/3")
+  String get assignmentProgress =>
+      '${assignedReferees.length}/$refereesRequired';
+
+  /// Get assignment status description
+  String get assignmentStatusText {
+    if (assignedReferees.isEmpty) {
+      return 'No referees assigned yet';
+    } else if (assignedReferees.length < refereesRequired) {
+      return 'Partial referee coverage ($assignmentProgress)';
+    } else {
+      return 'Fully staffed';
+    }
+  }
+
+  /// Check if partially assigned (some but not all referees)
+  bool get isPartiallyAssigned => assignedReferees.isNotEmpty && needsReferees;
+
+  /// Check if fully assigned
+  bool get isFullyAssigned => assignedReferees.length >= refereesRequired;
+
   /// Check if specific user is assigned
   bool isUserAssigned(String userId) {
     return assignedReferees.any((r) => r.userId == userId);
@@ -81,22 +102,24 @@ class RefereeJobModel {
   bool get isCompleted => status == JobStatus.completed;
 
   /// Check if job is still available for applications
-  bool get isAvailable =>
-      status == JobStatus.open && needsReferees;
+  bool get isAvailable => status == JobStatus.open && needsReferees;
 
   /// Factory constructor from Firestore
   factory RefereeJobModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     // Handle matchDate (required)
-    final matchDate = (data['matchDate'] as Timestamp?)?.toDate() ?? DateTime.now();
-    
+    final matchDate =
+        (data['matchDate'] as Timestamp?)?.toDate() ?? DateTime.now();
+
     // Handle startTime (may be null in older documents - fallback to matchDate)
     final startTime = (data['startTime'] as Timestamp?)?.toDate() ?? matchDate;
-    
+
     // Handle endTime (may be null in older documents - fallback to matchDate + 2 hours)
-    final endTime = (data['endTime'] as Timestamp?)?.toDate() ?? matchDate.add(const Duration(hours: 2));
-    
+    final endTime =
+        (data['endTime'] as Timestamp?)?.toDate() ??
+        matchDate.add(const Duration(hours: 2));
+
     return RefereeJobModel(
       id: doc.id,
       bookingId: data['bookingId'] ?? '',
@@ -107,20 +130,20 @@ class RefereeJobModel {
       startTime: startTime,
       endTime: endTime,
       location: data['location'] ?? '',
-      earnings: (data['earnings'] ?? AppConstants.refereeEarningsTournament)
-          .toDouble(),
+      earnings:
+          (data['earnings'] ?? AppConstants.refereeEarningsTournament)
+              .toDouble(),
       refereesRequired: data['refereesRequired'] ?? 1,
-      assignedReferees: (data['assignedReferees'] as List? ?? [])
-          .map((r) => AssignedReferee.fromMap(r))
-          .toList(),
+      assignedReferees:
+          (data['assignedReferees'] as List? ?? [])
+              .map((r) => AssignedReferee.fromMap(r))
+              .toList(),
       status: JobStatus.fromCode(data['status'] ?? 'OPEN'),
       organizerUserId: data['organizerUserId'] ?? '',
       organizerName: data['organizerName'] ?? '',
       notes: data['notes'],
-      createdAt:
-          (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt:
-          (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
@@ -226,14 +249,16 @@ class AssignedReferee {
       email: map['email'] ?? '',
       role: RefereeRole.fromCode(map['role'] ?? 'SOLO'),
       hasCheckedIn: map['hasCheckedIn'] ?? false,
-      checkedInAt: map['checkedInAt'] != null
-          ? (map['checkedInAt'] as Timestamp).toDate()
-          : null,
+      checkedInAt:
+          map['checkedInAt'] != null
+              ? (map['checkedInAt'] as Timestamp).toDate()
+              : null,
       hasBeenRated: map['hasBeenRated'] ?? false,
       rating: map['rating']?.toDouble(),
-      assignedAt: map['assignedAt'] != null
-          ? (map['assignedAt'] as Timestamp).toDate()
-          : DateTime.now(),
+      assignedAt:
+          map['assignedAt'] != null
+              ? (map['assignedAt'] as Timestamp).toDate()
+              : DateTime.now(),
     );
   }
 
@@ -291,4 +316,3 @@ enum RefereeRole {
     );
   }
 }
-

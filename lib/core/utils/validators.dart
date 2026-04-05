@@ -35,17 +35,20 @@ class Validators {
 
     if (!password.contains(RegExp(r'[A-Z]'))) {
       return ValidationResult.invalid(
-          'Password must contain at least one uppercase letter');
+        'Password must contain at least one uppercase letter',
+      );
     }
 
     if (!password.contains(RegExp(r'[a-z]'))) {
       return ValidationResult.invalid(
-          'Password must contain at least one lowercase letter');
+        'Password must contain at least one lowercase letter',
+      );
     }
 
     if (!password.contains(RegExp(r'[0-9]'))) {
       return ValidationResult.invalid(
-          'Password must contain at least one number');
+        'Password must contain at least one number',
+      );
     }
 
     return ValidationResult.valid();
@@ -53,7 +56,9 @@ class Validators {
 
   /// Validates password confirmation
   static ValidationResult validateConfirmPassword(
-      String? password, String? confirmPassword) {
+    String? password,
+    String? confirmPassword,
+  ) {
     if (confirmPassword == null || confirmPassword.isEmpty) {
       return ValidationResult.invalid('Please confirm your password');
     }
@@ -75,7 +80,8 @@ class Validators {
     final codeRegex = RegExp(r'^[A-Z]{3}[0-9]{4}$');
     if (!codeRegex.hasMatch(code.toUpperCase())) {
       return ValidationResult.invalid(
-          'Invalid course code format (e.g., QKS2101)');
+        'Invalid course code format (e.g., QKS2101)',
+      );
     }
 
     return ValidationResult.valid();
@@ -112,7 +118,8 @@ class Validators {
 
     if (!digitsOnly.startsWith('01') && !digitsOnly.startsWith('601')) {
       return ValidationResult.invalid(
-          'Please enter a valid Malaysian mobile number');
+        'Please enter a valid Malaysian mobile number',
+      );
     }
 
     return ValidationResult.valid();
@@ -166,7 +173,9 @@ class Validators {
     // Max 30 days in advance
     final maxDate = today.add(const Duration(days: 30));
     if (selectedDate.isAfter(maxDate)) {
-      return ValidationResult.invalid('Cannot book more than 30 days in advance');
+      return ValidationResult.invalid(
+        'Cannot book more than 30 days in advance',
+      );
     }
 
     return ValidationResult.valid();
@@ -176,12 +185,14 @@ class Validators {
   static ValidationResult validateTimeSlot(int hour) {
     if (hour < AppConstants.operatingStartHour) {
       return ValidationResult.invalid(
-          'Facility opens at ${AppConstants.operatingStartHour}:00 AM');
+        'Facility opens at ${AppConstants.operatingStartHour}:00 AM',
+      );
     }
 
     if (hour >= AppConstants.operatingEndHour) {
       return ValidationResult.invalid(
-          'Facility closes at ${AppConstants.operatingEndHour}:00 PM');
+        'Facility closes at ${AppConstants.operatingEndHour}:00 PM',
+      );
     }
 
     return ValidationResult.valid();
@@ -192,10 +203,12 @@ class Validators {
     if (dateTime.weekday != DateTime.friday) return false;
 
     final timeInMinutes = dateTime.hour * 60 + dateTime.minute;
-    const blockStart = AppConstants.fridayBlockStartHour * 60 +
+    const blockStart =
+        AppConstants.fridayBlockStartHour * 60 +
         AppConstants.fridayBlockStartMinute;
     const blockEnd =
-        AppConstants.fridayBlockEndHour * 60 + AppConstants.fridayBlockEndMinute;
+        AppConstants.fridayBlockEndHour * 60 +
+        AppConstants.fridayBlockEndMinute;
 
     return timeInMinutes >= blockStart && timeInMinutes < blockEnd;
   }
@@ -224,11 +237,15 @@ class Validators {
     }
 
     if (description.trim().length < 10) {
-      return ValidationResult.invalid('Description must be at least 10 characters');
+      return ValidationResult.invalid(
+        'Description must be at least 10 characters',
+      );
     }
 
     if (description.length > 500) {
-      return ValidationResult.invalid('Description is too long (max 500 characters)');
+      return ValidationResult.invalid(
+        'Description is too long (max 500 characters)',
+      );
     }
 
     return ValidationResult.valid();
@@ -273,21 +290,6 @@ class Validators {
 
     return ValidationResult.valid();
   }
-
-  /// Validates team code (for split bill joining)
-  static ValidationResult validateTeamCode(String? code) {
-    if (code == null || code.trim().isEmpty) {
-      return ValidationResult.invalid('Team code is required');
-    }
-
-    // Team codes typically follow format: XXXX-#### (4 letters-4 digits)
-    final codeRegex = RegExp(r'^[A-Z]{4}-[0-9]{3}$');
-    if (!codeRegex.hasMatch(code.toUpperCase().trim())) {
-      return ValidationResult.invalid('Invalid team code format (e.g., TIGER-882)');
-    }
-
-    return ValidationResult.valid();
-  }
 }
 
 /// Result class for validation
@@ -295,16 +297,10 @@ class ValidationResult {
   final bool isValid;
   final String? errorMessage;
 
-  const ValidationResult._({
-    required this.isValid,
-    this.errorMessage,
-  });
+  const ValidationResult._({required this.isValid, this.errorMessage});
 
   factory ValidationResult.valid() => const ValidationResult._(isValid: true);
 
-  factory ValidationResult.invalid(String message) => ValidationResult._(
-        isValid: false,
-        errorMessage: message,
-      );
+  factory ValidationResult.invalid(String message) =>
+      ValidationResult._(isValid: false, errorMessage: message);
 }
-

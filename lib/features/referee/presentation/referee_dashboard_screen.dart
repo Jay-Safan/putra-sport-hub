@@ -11,6 +11,7 @@ import '../../../core/widgets/shimmer_loading.dart';
 import '../../../core/widgets/avatar_widget.dart';
 import '../../../core/utils/error_handler.dart';
 import '../../../providers/providers.dart';
+import '../../../services/badge_service.dart';
 import '../data/models/referee_job_model.dart';
 
 /// SukanGig - Referee Marketplace Dashboard
@@ -25,8 +26,7 @@ class RefereeDashboardScreen extends ConsumerStatefulWidget {
 
 enum JobTypeFilter { all, tournament, practice }
 
-class _RefereeDashboardScreenState
-    extends ConsumerState<RefereeDashboardScreen>
+class _RefereeDashboardScreenState extends ConsumerState<RefereeDashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? _acceptingJobId; // Track which job is being accepted
@@ -47,7 +47,8 @@ class _RefereeDashboardScreenState
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider).valueOrNull;
-    final isStudentWithoutBadges = user?.isStudent == true && !(user?.isVerifiedReferee ?? false);
+    final isStudentWithoutBadges =
+        user?.isStudent == true && !(user?.isVerifiedReferee ?? false);
 
     return Scaffold(
       body: Container(
@@ -67,9 +68,7 @@ class _RefereeDashboardScreenState
         child: Stack(
           children: [
             // Background orbs - ignore pointer events
-            IgnorePointer(
-              child: _buildBackgroundOrbs(),
-            ),
+            IgnorePointer(child: _buildBackgroundOrbs()),
             SafeArea(
               child: NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -85,15 +84,28 @@ class _RefereeDashboardScreenState
                           if (isStudentWithoutBadges) ...[
                             _buildBecomeRefereeBanner(context)
                                 .animate()
-                                .fadeIn(duration: 500.ms, delay: 100.ms, curve: Curves.easeOut)
+                                .fadeIn(
+                                  duration: 500.ms,
+                                  delay: 100.ms,
+                                  curve: Curves.easeOut,
+                                )
                                 .slideY(begin: 0.1, end: 0, duration: 500.ms),
                             const SizedBox(height: 16),
                           ],
                           const SizedBox(height: 12),
                           _buildStatsBar(user)
                               .animate()
-                              .fadeIn(duration: 600.ms, delay: 200.ms, curve: Curves.easeOut)
-                              .slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
+                              .fadeIn(
+                                duration: 600.ms,
+                                delay: 200.ms,
+                                curve: Curves.easeOut,
+                              )
+                              .slideY(
+                                begin: 0.1,
+                                end: 0,
+                                duration: 600.ms,
+                                curve: Curves.easeOutCubic,
+                              ),
                           const SizedBox(height: 20),
                         ],
                       ),
@@ -103,7 +115,11 @@ class _RefereeDashboardScreenState
                       delegate: _TabBarDelegate(
                         child: _buildTabBar()
                             .animate()
-                            .fadeIn(duration: 500.ms, delay: 300.ms, curve: Curves.easeOut)
+                            .fadeIn(
+                              duration: 500.ms,
+                              delay: 300.ms,
+                              curve: Curves.easeOut,
+                            )
                             .slideY(begin: 0.05, end: 0, duration: 500.ms),
                       ),
                     ),
@@ -132,18 +148,18 @@ class _RefereeDashboardScreenState
           top: -80,
           right: -60,
           child: Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.primaryGreen.withValues(alpha: 0.25),
-                  AppTheme.primaryGreen.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.25),
+                      AppTheme.primaryGreen.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -157,18 +173,18 @@ class _RefereeDashboardScreenState
           bottom: 150,
           left: -80,
           child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.upmRed.withValues(alpha: 0.15),
-                  AppTheme.upmRed.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.upmRed.withValues(alpha: 0.15),
+                      AppTheme.upmRed.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -183,18 +199,18 @@ class _RefereeDashboardScreenState
           top: 200,
           right: 30,
           child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.primaryGreen.withValues(alpha: 0.2),
-                  AppTheme.primaryGreen.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          )
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.2),
+                      AppTheme.primaryGreen.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
                 begin: const Offset(1, 1),
@@ -209,64 +225,202 @@ class _RefereeDashboardScreenState
   }
 
   Widget _buildHeader(BuildContext context, user) {
+    final badgeService = ref.read(badgeServiceProvider);
+    final userBadges =
+        user != null ? badgeService.getUserBadges(user) : <BadgeInfo>[];
+
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Row(
+      child: Column(
         children: [
-          // Sport icon instead of back button (this is a main tab)
-          _buildGlassIconButton(Icons.sports),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              // Sport icon instead of back button (this is a main tab)
+              _buildGlassIconButton(Icons.sports),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'SukanGig',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
+                    Row(
+                      children: [
+                        const Text(
+                          'SukanGig',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppTheme.upmRed, Color(0xFFE53935)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'REFEREE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppTheme.upmRed, Color(0xFFE53935)],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'REFEREE',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Officiate matches, earn rewards',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 13,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Officiate matches, earn rewards',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          _buildGlassIconButton(Icons.filter_list),
+
+          // Badge Display Section
+          if (userBadges.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.emoji_events,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Your Referee Badges (${userBadges.length})',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children:
+                        userBadges
+                            .map(
+                              (badge) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppTheme.primaryGreen.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      AppTheme.primaryGreen.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: AppTheme.primaryGreen.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      badge.icon,
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      badge.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.orange.withValues(alpha: 0.8),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'No Referee Badges',
+                          style: TextStyle(
+                            color: Colors.orange.withValues(alpha: 0.9),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Contact admin to get certified for sports',
+                          style: TextStyle(
+                            color: Colors.orange.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -285,9 +439,7 @@ class _RefereeDashboardScreenState
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: Icon(icon, color: Colors.white, size: 20),
           ),
@@ -316,16 +468,15 @@ class _RefereeDashboardScreenState
                 ],
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatItem(
                   icon: Icons.monetization_on,
-                  value: 'RM${AppConstants.refereeEarningsPractice.toInt()}/${AppConstants.refereeEarningsTournament.toInt()}',
+                  value:
+                      'RM${AppConstants.refereeEarningsPractice.toInt()}/${AppConstants.refereeEarningsTournament.toInt()}',
                   label: 'Practice/Tournament',
                   color: AppTheme.primaryGreen,
                   isHighlighted: true,
@@ -334,7 +485,9 @@ class _RefereeDashboardScreenState
                 userJobs.when(
                   data: (jobs) {
                     final completed =
-                        jobs.where((j) => j.status == JobStatus.completed).length;
+                        jobs
+                            .where((j) => j.status == JobStatus.completed)
+                            .length;
                     return _buildStatItem(
                       icon: Icons.check_circle,
                       value: completed.toString(),
@@ -342,39 +495,44 @@ class _RefereeDashboardScreenState
                       color: AppTheme.accentGold,
                     );
                   },
-                  loading: () => _buildStatItem(
-                    icon: Icons.check_circle,
-                    value: '-',
-                    label: 'Completed',
-                    color: AppTheme.accentGold,
-                  ),
-                  error: (_, __) => _buildStatItem(
-                    icon: Icons.check_circle,
-                    value: '0',
-                    label: 'Completed',
-                    color: AppTheme.accentGold,
-                  ),
+                  loading:
+                      () => _buildStatItem(
+                        icon: Icons.check_circle,
+                        value: '-',
+                        label: 'Completed',
+                        color: AppTheme.accentGold,
+                      ),
+                  error:
+                      (_, __) => _buildStatItem(
+                        icon: Icons.check_circle,
+                        value: '0',
+                        label: 'Completed',
+                        color: AppTheme.accentGold,
+                      ),
                 ),
                 _buildStatDivider(),
                 rating.when(
-                  data: (r) => _buildStatItem(
-                    icon: Icons.star,
-                    value: r?.toStringAsFixed(1) ?? 'N/A',
-                    label: 'Rating',
-                    color: Colors.amber,
-                  ),
-                  loading: () => _buildStatItem(
-                    icon: Icons.star,
-                    value: '-',
-                    label: 'Rating',
-                    color: Colors.amber,
-                  ),
-                  error: (_, __) => _buildStatItem(
-                    icon: Icons.star,
-                    value: 'N/A',
-                    label: 'Rating',
-                    color: Colors.amber,
-                  ),
+                  data:
+                      (r) => _buildStatItem(
+                        icon: Icons.star,
+                        value: r?.toStringAsFixed(1) ?? 'N/A',
+                        label: 'Rating',
+                        color: Colors.amber,
+                      ),
+                  loading:
+                      () => _buildStatItem(
+                        icon: Icons.star,
+                        value: '-',
+                        label: 'Rating',
+                        color: Colors.amber,
+                      ),
+                  error:
+                      (_, __) => _buildStatItem(
+                        icon: Icons.star,
+                        value: 'N/A',
+                        label: 'Rating',
+                        color: Colors.amber,
+                      ),
                 ),
               ],
             ),
@@ -398,15 +556,16 @@ class _RefereeDashboardScreenState
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.2),
             shape: BoxShape.circle,
-            boxShadow: isHighlighted
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : null,
+            boxShadow:
+                isHighlighted
+                    ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.4),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                    : null,
           ),
           child: Icon(icon, color: color, size: 20),
         ),
@@ -451,9 +610,7 @@ class _RefereeDashboardScreenState
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: TabBar(
               controller: _tabController,
@@ -493,17 +650,48 @@ class _RefereeDashboardScreenState
 
   Widget _buildAvailableJobsTab(user) {
     final availableJobs = ref.watch(availableJobsProvider);
+    final userJobs = ref.watch(userRefereeJobsProvider);
 
     // Get user's certifications to filter jobs
     final userBadges = user?.badges ?? <String>[];
 
     return availableJobs.when(
       data: (jobs) {
-        // Filter jobs based on user's certifications (for counts and display)
-        final certifiedJobs = jobs.where((job) {
-          if (userBadges.isEmpty) return true; // Show all if no badges
-          return _userCanOfficiate(job.sport, userBadges);
-        }).toList();
+        // Get user's accepted jobs for conflict checking
+        final acceptedJobs = userJobs.maybeWhen(
+          data:
+              (userJobsList) =>
+                  userJobsList
+                      .where(
+                        (j) =>
+                            j.status == JobStatus.open ||
+                            j.status == JobStatus.assigned,
+                      )
+                      .toList(),
+          orElse: () => <RefereeJobModel>[],
+        );
+
+        // Filter jobs based on user's certifications and availability (for counts and display)
+        final certifiedJobs =
+            jobs.where((job) {
+              // Filter out jobs if no certifications
+              if (userBadges.isEmpty) return true; // Show all if no badges
+              if (!_userCanOfficiate(job.sport, userBadges)) return false;
+
+              // REFINEMENT: Filter out jobs where user is already assigned
+              // This eliminates duplication between Available and My Jobs tabs
+              // Added safe checking to handle potential data inconsistencies
+              try {
+                if (user?.uid != null && job.isUserAssigned(user!.uid)) {
+                  return false;
+                }
+              } catch (e) {
+                // Log the error but continue processing to avoid breaking the UI
+                debugPrint('Error checking user assignment: $e');
+              }
+
+              return true;
+            }).toList();
 
         // Apply job type filter for display
         final filteredJobs = _applyJobTypeFilter(certifiedJobs);
@@ -513,62 +701,97 @@ class _RefereeDashboardScreenState
           children: [
             // Filter bar - ALWAYS visible with counts from certified jobs
             _buildJobTypeFilterBar(certifiedJobs),
-            
+
             // Content area - either jobs list or empty state
             Expanded(
-              child: filteredJobs.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: () async {
-                        ref.invalidate(availableJobsProvider);
-                      },
-                      color: AppTheme.primaryGreen,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.5,
-                          child: _buildEmptyStateContent(
-                            icon: Icons.sports,
-                            title: userBadges.isEmpty
-                                ? 'Get Certified First 🏅'
-                                : 'No Available Jobs ⚽',
-                            subtitle: userBadges.isEmpty
-                                ? 'Complete a referee certification course (e.g., QKS2101) to start officiating matches and earning RM 20-40 per game!'
-                                : _selectedJobTypeFilter != JobTypeFilter.all
-                                    ? 'No ${_selectedJobTypeFilter == JobTypeFilter.tournament ? "tournament" : "practice"} jobs available right now. Try selecting "All Jobs" or check back later!'
-                                    : 'No referee jobs available at the moment. New opportunities appear when tournaments are created or bookings request referees. Check back soon!',
+              child:
+                  filteredJobs.isEmpty
+                      ? RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(availableJobsProvider);
+                        },
+                        color: AppTheme.primaryGreen,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.5,
+                            child: _buildEmptyStateContent(
+                              icon: Icons.sports,
+                              title:
+                                  userBadges.isEmpty
+                                      ? 'Get Certified First 🏅'
+                                      : 'No Available Jobs ⚽',
+                              subtitle:
+                                  userBadges.isEmpty
+                                      ? 'Complete a referee certification course (e.g., QKS2101) to start officiating matches and earning RM 20-40 per game!'
+                                      : _selectedJobTypeFilter !=
+                                          JobTypeFilter.all
+                                      ? 'No ${_selectedJobTypeFilter == JobTypeFilter.tournament ? "tournament" : "practice"} jobs available right now. Try selecting "All Jobs" or check back later!'
+                                      : 'No referee jobs available at the moment. New opportunities appear when tournaments are created or bookings request referees. Check back soon!',
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () async {
-                        ref.invalidate(availableJobsProvider);
-                      },
-                      color: AppTheme.primaryGreen,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: filteredJobs.length,
-                        itemBuilder: (context, index) {
-                          final job = filteredJobs[index];
-                          return _buildJobCard(job, user, isAvailable: true)
-                              .animate()
-                              .fadeIn(duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut)
-                              .slideY(begin: 0.1, end: 0, duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut);
+                      )
+                      : RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(availableJobsProvider);
                         },
+                        color: AppTheme.primaryGreen,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: filteredJobs.length,
+                          itemBuilder: (context, index) {
+                            final job = filteredJobs[index];
+
+                            // Check for conflicts with user's accepted jobs
+                            final hasConflict = acceptedJobs.any(
+                              (acceptedJob) => _hasTimeOverlap(
+                                job.startTime,
+                                job.endTime,
+                                acceptedJob.startTime,
+                                acceptedJob.endTime,
+                              ),
+                            );
+
+                            return _buildJobCard(
+                                  job,
+                                  user,
+                                  isAvailable: true,
+                                  hasConflict: hasConflict,
+                                )
+                                .animate()
+                                .fadeIn(
+                                  duration: 400.ms,
+                                  delay: (index * 50).ms,
+                                  curve: Curves.easeOut,
+                                )
+                                .slideY(
+                                  begin: 0.1,
+                                  end: 0,
+                                  duration: 400.ms,
+                                  delay: (index * 50).ms,
+                                  curve: Curves.easeOut,
+                                );
+                          },
+                        ),
                       ),
-                    ),
             ),
           ],
         );
       },
       loading: () => _buildLoadingState(),
-      error: (err, _) => _buildErrorState(
-        ErrorHandler.getUserFriendlyErrorMessage(err, context: 'referee', defaultMessage: 'Unable to load referee jobs. Please try again.'),
-      ),
+      error:
+          (err, _) => _buildErrorState(
+            ErrorHandler.getUserFriendlyErrorMessage(
+              err,
+              context: 'referee',
+              defaultMessage: 'Unable to load referee jobs. Please try again.',
+            ),
+          ),
     );
   }
-  
+
   /// Empty state content widget (without Center wrapper for use inside Expanded)
   Widget _buildEmptyStateContent({
     required IconData icon,
@@ -583,17 +806,17 @@ class _RefereeDashboardScreenState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white.withValues(alpha: 0.5),
-                size: 48,
-              ),
-            )
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white.withValues(alpha: 0.5),
+                    size: 48,
+                  ),
+                )
                 .animate()
                 .fadeIn(duration: 600.ms, curve: Curves.easeOut)
                 .scale(
@@ -604,14 +827,14 @@ class _RefereeDashboardScreenState
                 ),
             const SizedBox(height: 20),
             Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            )
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                )
                 .animate()
                 .fadeIn(duration: 500.ms, delay: 200.ms, curve: Curves.easeOut)
                 .slideY(begin: 0.1, end: 0, duration: 500.ms),
@@ -623,9 +846,11 @@ class _RefereeDashboardScreenState
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
-            )
-                .animate()
-                .fadeIn(duration: 500.ms, delay: 300.ms, curve: Curves.easeOut),
+            ).animate().fadeIn(
+              duration: 500.ms,
+              delay: 300.ms,
+              curve: Curves.easeOut,
+            ),
           ],
         ),
       ),
@@ -637,14 +862,20 @@ class _RefereeDashboardScreenState
 
     return myJobs.when(
       data: (jobs) {
-        // Only show upcoming/active jobs (not completed)
-        final upcomingJobs = jobs
-            .where((j) =>
-                j.status != JobStatus.completed &&
-                j.status != JobStatus.cancelled &&
-                j.startTime.isAfter(DateTime.now().subtract(const Duration(hours: 2))))
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+        // REFINEMENT: Enhanced categorization with clearer status handling
+        // Only show upcoming/active jobs (not completed or cancelled)
+        final upcomingJobs =
+            jobs
+                .where(
+                  (j) =>
+                      j.status != JobStatus.completed &&
+                      j.status != JobStatus.cancelled &&
+                      j.startTime.isAfter(
+                        DateTime.now().subtract(const Duration(hours: 2)),
+                      ),
+                )
+                .toList()
+              ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
         if (upcomingJobs.isEmpty) {
           return RefreshIndicator(
@@ -659,7 +890,8 @@ class _RefereeDashboardScreenState
                 child: _buildEmptyState(
                   icon: Icons.event_available_outlined,
                   title: 'No Upcoming Jobs 📋',
-                  subtitle: 'You haven\'t accepted any referee jobs yet. Browse the "Available" tab to find matches that need officiating!',
+                  subtitle:
+                      'You haven\'t accepted any referee jobs yet. Browse the "Available" tab to find matches that need officiating! Jobs you accept will appear here with clear status indicators.',
                 ),
               ),
             ),
@@ -682,17 +914,32 @@ class _RefereeDashboardScreenState
                 final job = entry.value;
                 return _buildJobCard(job, user)
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut)
-                    .slideY(begin: 0.1, end: 0, duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut);
+                    .fadeIn(
+                      duration: 400.ms,
+                      delay: (index * 50).ms,
+                      curve: Curves.easeOut,
+                    )
+                    .slideY(
+                      begin: 0.1,
+                      end: 0,
+                      duration: 400.ms,
+                      delay: (index * 50).ms,
+                      curve: Curves.easeOut,
+                    );
               }),
             ],
           ),
         );
       },
       loading: () => _buildLoadingState(),
-      error: (err, _) => _buildErrorState(
-        ErrorHandler.getUserFriendlyErrorMessage(err, context: 'referee', defaultMessage: 'Unable to load referee jobs. Please try again.'),
-      ),
+      error:
+          (err, _) => _buildErrorState(
+            ErrorHandler.getUserFriendlyErrorMessage(
+              err,
+              context: 'referee',
+              defaultMessage: 'Unable to load referee jobs. Please try again.',
+            ),
+          ),
     );
   }
 
@@ -701,15 +948,24 @@ class _RefereeDashboardScreenState
 
     return myJobs.when(
       data: (jobs) {
-        // Get completed jobs and past jobs
-        final pastJobs = jobs
-            .where((j) =>
-                j.status == JobStatus.completed ||
-                j.status == JobStatus.paid ||
-                (j.status != JobStatus.cancelled &&
-                    j.startTime.isBefore(DateTime.now().subtract(const Duration(hours: 2)))))
-            .toList()
-          ..sort((a, b) => b.startTime.compareTo(a.startTime)); // Newest first
+        // REFINEMENT: Include cancelled jobs for complete history view
+        // Get completed jobs, past jobs, and cancelled jobs
+        final pastJobs =
+            jobs
+                .where(
+                  (j) =>
+                      j.status == JobStatus.completed ||
+                      j.status == JobStatus.paid ||
+                      j.status ==
+                          JobStatus.cancelled || // Include cancelled jobs
+                      j.startTime.isBefore(
+                        DateTime.now().subtract(const Duration(hours: 2)),
+                      ),
+                )
+                .toList()
+              ..sort(
+                (a, b) => b.startTime.compareTo(a.startTime),
+              ); // Newest first
 
         // Calculate total earnings
         final totalEarnings = pastJobs.fold<double>(
@@ -743,13 +999,18 @@ class _RefereeDashboardScreenState
             children: [
               // Earnings Summary Card
               _buildEarningsSummaryCard(
-                totalEarnings: totalEarnings,
-                thisMonthEarnings: thisMonthEarnings,
-                totalGigs: pastJobs.length,
-              )
+                    totalEarnings: totalEarnings,
+                    thisMonthEarnings: thisMonthEarnings,
+                    totalGigs: pastJobs.length,
+                  )
                   .animate()
                   .fadeIn(duration: 600.ms, curve: Curves.easeOut)
-                  .slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
+                  .slideY(
+                    begin: 0.1,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
               const SizedBox(height: 24),
 
               if (pastJobs.isEmpty)
@@ -765,7 +1026,8 @@ class _RefereeDashboardScreenState
                       child: _buildEmptyStateContent(
                         icon: Icons.history_outlined,
                         title: 'No Past Gigs 📊',
-                        subtitle: 'Your completed referee jobs and earnings history will appear here once you complete your first gig!',
+                        subtitle:
+                            'Your completed referee jobs and earnings history will appear here once you complete your first gig!',
                       ),
                     ),
                   ),
@@ -780,8 +1042,18 @@ class _RefereeDashboardScreenState
                     final job = jobEntry.value;
                     return _buildPastJobCard(job)
                         .animate()
-                        .fadeIn(duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut)
-                        .slideY(begin: 0.1, end: 0, duration: 400.ms, delay: (index * 50).ms, curve: Curves.easeOut);
+                        .fadeIn(
+                          duration: 400.ms,
+                          delay: (index * 50).ms,
+                          curve: Curves.easeOut,
+                        )
+                        .slideY(
+                          begin: 0.1,
+                          end: 0,
+                          duration: 400.ms,
+                          delay: (index * 50).ms,
+                          curve: Curves.easeOut,
+                        );
                   }),
                   const SizedBox(height: 20),
                 ],
@@ -791,9 +1063,14 @@ class _RefereeDashboardScreenState
         );
       },
       loading: () => _buildLoadingState(),
-      error: (err, _) => _buildErrorState(
-        ErrorHandler.getUserFriendlyErrorMessage(err, context: 'referee', defaultMessage: 'Unable to load referee jobs. Please try again.'),
-      ),
+      error:
+          (err, _) => _buildErrorState(
+            ErrorHandler.getUserFriendlyErrorMessage(
+              err,
+              context: 'referee',
+              defaultMessage: 'Unable to load referee jobs. Please try again.',
+            ),
+          ),
     );
   }
 
@@ -1000,9 +1277,7 @@ class _RefereeDashboardScreenState
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -1033,32 +1308,49 @@ class _RefereeDashboardScreenState
                               child: Text(
                                 job.facilityName,
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.9),
+                                  color:
+                                      job.status == JobStatus.cancelled
+                                          ? Colors.white.withValues(alpha: 0.5)
+                                          : Colors.white.withValues(alpha: 0.9),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
+                                  decoration:
+                                      job.status == JobStatus.cancelled
+                                          ? TextDecoration.lineThrough
+                                          : null,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // Job type badge
+                            // Enhanced status/type badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: _isTournamentJob(job)
-                                    ? Colors.amber.withValues(alpha: 0.2)
-                                    : Colors.blue.withValues(alpha: 0.2),
+                                color:
+                                    job.status == JobStatus.cancelled
+                                        ? Colors.red.withValues(alpha: 0.2)
+                                        : _isTournamentJob(job)
+                                        ? Colors.amber.withValues(alpha: 0.2)
+                                        : Colors.blue.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                _isTournamentJob(job) ? 'Tournament' : 'Practice',
+                                job.status == JobStatus.cancelled
+                                    ? 'Cancelled'
+                                    : _isTournamentJob(job)
+                                    ? 'Tournament'
+                                    : 'Practice',
                                 style: TextStyle(
-                                  color: _isTournamentJob(job)
-                                      ? Colors.amber.withValues(alpha: 0.9)
-                                      : Colors.blue.withValues(alpha: 0.9),
+                                  color:
+                                      job.status == JobStatus.cancelled
+                                          ? Colors.red.withValues(alpha: 0.9)
+                                          : _isTournamentJob(job)
+                                          ? Colors.amber.withValues(alpha: 0.9)
+                                          : Colors.blue.withValues(alpha: 0.9),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1120,11 +1412,12 @@ class _RefereeDashboardScreenState
                             isPaid
                                 ? Icons.paid_rounded
                                 : isCompleted
-                                    ? Icons.check_circle_rounded
-                                    : Icons.history_rounded,
-                            color: isPaid
-                                ? AppTheme.primaryGreenLight
-                                : isCompleted
+                                ? Icons.check_circle_rounded
+                                : Icons.history_rounded,
+                            color:
+                                isPaid
+                                    ? AppTheme.primaryGreenLight
+                                    : isCompleted
                                     ? Colors.green.withValues(alpha: 0.7)
                                     : Colors.white.withValues(alpha: 0.5),
                             size: 14,
@@ -1134,12 +1427,13 @@ class _RefereeDashboardScreenState
                             isPaid
                                 ? 'Paid'
                                 : isCompleted
-                                    ? 'Completed'
-                                    : 'Past',
+                                ? 'Completed'
+                                : 'Past',
                             style: TextStyle(
-                              color: isPaid
-                                  ? AppTheme.primaryGreenLight
-                                  : isCompleted
+                              color:
+                                  isPaid
+                                      ? AppTheme.primaryGreenLight
+                                      : isCompleted
                                       ? Colors.green.withValues(alpha: 0.7)
                                       : Colors.white.withValues(alpha: 0.5),
                               fontSize: 11,
@@ -1230,22 +1524,22 @@ class _RefereeDashboardScreenState
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              gradient: isSelected
-                  ? LinearGradient(
-                      colors: [
-                        AppTheme.primaryGreenLight.withValues(alpha: 0.3),
-                        AppTheme.primaryGreen.withValues(alpha: 0.2),
-                      ],
-                    )
-                  : null,
-              color: isSelected
-                  ? null
-                  : Colors.white.withValues(alpha: 0.08),
+              gradient:
+                  isSelected
+                      ? LinearGradient(
+                        colors: [
+                          AppTheme.primaryGreenLight.withValues(alpha: 0.3),
+                          AppTheme.primaryGreen.withValues(alpha: 0.2),
+                        ],
+                      )
+                      : null,
+              color: isSelected ? null : Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isSelected
-                    ? AppTheme.primaryGreenLight.withValues(alpha: 0.4)
-                    : Colors.white.withValues(alpha: 0.15),
+                color:
+                    isSelected
+                        ? AppTheme.primaryGreenLight.withValues(alpha: 0.4)
+                        : Colors.white.withValues(alpha: 0.15),
                 width: isSelected ? 1.5 : 1,
               ),
             ),
@@ -1255,9 +1549,10 @@ class _RefereeDashboardScreenState
                 if (icon != null) ...[
                   Icon(
                     icon,
-                    color: isSelected
-                        ? AppTheme.primaryGreenLight
-                        : Colors.white.withValues(alpha: 0.7),
+                    color:
+                        isSelected
+                            ? AppTheme.primaryGreenLight
+                            : Colors.white.withValues(alpha: 0.7),
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -1265,9 +1560,10 @@ class _RefereeDashboardScreenState
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.8),
+                    color:
+                        isSelected
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.8),
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   ),
@@ -1277,9 +1573,10 @@ class _RefereeDashboardScreenState
                   Text(
                     '(RM ${earnings.toInt()})',
                     style: TextStyle(
-                      color: isSelected
-                          ? AppTheme.primaryGreenLight
-                          : Colors.white.withValues(alpha: 0.6),
+                      color:
+                          isSelected
+                              ? AppTheme.primaryGreenLight
+                              : Colors.white.withValues(alpha: 0.6),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1287,19 +1584,24 @@ class _RefereeDashboardScreenState
                 ],
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.primaryGreenLight.withValues(alpha: 0.3)
-                        : Colors.white.withValues(alpha: 0.15),
+                    color:
+                        isSelected
+                            ? AppTheme.primaryGreenLight.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     count.toString(),
                     style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.8),
+                      color:
+                          isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.8),
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1344,7 +1646,22 @@ class _RefereeDashboardScreenState
     );
   }
 
-  Widget _buildJobCard(RefereeJobModel job, user, {bool isAvailable = false}) {
+  /// Check if two time periods overlap
+  bool _hasTimeOverlap(
+    DateTime newStart,
+    DateTime newEnd,
+    DateTime existingStart,
+    DateTime existingEnd,
+  ) {
+    return newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart);
+  }
+
+  Widget _buildJobCard(
+    RefereeJobModel job,
+    user, {
+    bool isAvailable = false,
+    bool hasConflict = false,
+  }) {
     final dateFormat = DateFormat('EEE, MMM d');
     final timeFormat = DateFormat('h:mm a');
     final sportColor = _getSportColor(job.sport);
@@ -1361,13 +1678,20 @@ class _RefereeDashboardScreenState
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: 0.12),
-                  Colors.white.withValues(alpha: 0.05),
+                  hasConflict
+                      ? Colors.amber.withValues(alpha: 0.12)
+                      : Colors.white.withValues(alpha: 0.12),
+                  hasConflict
+                      ? Colors.amber.withValues(alpha: 0.05)
+                      : Colors.white.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
+                color:
+                    hasConflict
+                        ? Colors.amber.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.15),
               ),
             ),
             child: Column(
@@ -1440,7 +1764,9 @@ class _RefereeDashboardScreenState
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                              color: AppTheme.primaryGreen.withValues(
+                                alpha: 0.5,
+                              ),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -1514,22 +1840,29 @@ class _RefereeDashboardScreenState
                             child: Row(
                               children: [
                                 AvatarWidget(
-                                  photoUrl: null, // Organizer photo not stored in job model
-                                  displayName: job.organizerName.isNotEmpty
-                                      ? job.organizerName
-                                      : 'Organizer',
+                                  photoUrl:
+                                      null, // Organizer photo not stored in job model
+                                  displayName:
+                                      job.organizerName.isNotEmpty
+                                          ? job.organizerName
+                                          : 'Organizer',
                                   radius: 14,
-                                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                  backgroundColor: Colors.white.withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Organizer',
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.5),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.5,
+                                          ),
                                           fontSize: 10,
                                         ),
                                       ),
@@ -1548,7 +1881,7 @@ class _RefereeDashboardScreenState
                               ],
                             ),
                           ),
-                          // Slots remaining
+                          // REFINEMENT: Enhanced multi-referee assignment messaging
                           if (isAvailable && job.needsReferees)
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -1556,25 +1889,49 @@ class _RefereeDashboardScreenState
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.warningAmber.withValues(alpha: 0.2),
+                                color:
+                                    job.isPartiallyAssigned
+                                        ? AppTheme.primaryGreen.withValues(
+                                          alpha: 0.15,
+                                        )
+                                        : AppTheme.warningAmber.withValues(
+                                          alpha: 0.2,
+                                        ),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: AppTheme.warningAmber.withValues(alpha: 0.5),
+                                  color:
+                                      job.isPartiallyAssigned
+                                          ? AppTheme.primaryGreen.withValues(
+                                            alpha: 0.3,
+                                          )
+                                          : AppTheme.warningAmber.withValues(
+                                            alpha: 0.5,
+                                          ),
                                 ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
-                                    Icons.people,
-                                    color: AppTheme.warningAmber,
+                                  Icon(
+                                    job.isPartiallyAssigned
+                                        ? Icons.group_add
+                                        : Icons.people,
+                                    color:
+                                        job.isPartiallyAssigned
+                                            ? AppTheme.primaryGreen
+                                            : AppTheme.warningAmber,
                                     size: 14,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '${job.remainingSlots} slot${job.remainingSlots > 1 ? 's' : ''} left',
-                                    style: const TextStyle(
-                                      color: AppTheme.warningAmber,
+                                    job.isPartiallyAssigned
+                                        ? '${job.assignmentProgress} • Join team!'
+                                        : '${job.remainingSlots} slot${job.remainingSlots > 1 ? 's' : ''} needed',
+                                    style: TextStyle(
+                                      color:
+                                          job.isPartiallyAssigned
+                                              ? AppTheme.primaryGreen
+                                              : AppTheme.warningAmber,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1585,19 +1942,21 @@ class _RefereeDashboardScreenState
                         ],
                       ),
 
-                      // Status badge for My Jobs
+                      // REFINEMENT: Enhanced status display with assignment context
                       if (!isAvailable) ...[
                         const SizedBox(height: 16),
                         Row(
                           children: [
+                            // Status badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(job.status)
-                                    .withValues(alpha: 0.2),
+                                color: _getStatusColor(
+                                  job.status,
+                                ).withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -1610,7 +1969,7 @@ class _RefereeDashboardScreenState
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    job.status.displayName,
+                                    _getEnhancedStatusText(job),
                                     style: TextStyle(
                                       color: _getStatusColor(job.status),
                                       fontSize: 12,
@@ -1620,7 +1979,68 @@ class _RefereeDashboardScreenState
                                 ],
                               ),
                             ),
+                            // Assignment progress for multi-referee jobs
+                            if (job.refereesRequired > 1) ...[
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Team: ${job.assignmentProgress}',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
+                        ),
+                      ],
+
+                      // Add conflict warning if there's a time conflict
+                      if (hasConflict && isAvailable) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.amber.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_outlined,
+                                color: Colors.amber.shade200,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '⚠️ Time conflict with your accepted job',
+                                  style: TextStyle(
+                                    color: Colors.amber.shade200,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
 
@@ -1629,7 +2049,11 @@ class _RefereeDashboardScreenState
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
-                          child: _buildAcceptButton(job, user),
+                          child: _buildAcceptButton(
+                            job,
+                            user,
+                            hasConflict: hasConflict,
+                          ),
                         ),
                       ],
                     ],
@@ -1643,7 +2067,11 @@ class _RefereeDashboardScreenState
     );
   }
 
-  Widget _buildInfoChip(IconData icon, String text, {bool isFullWidth = false}) {
+  Widget _buildInfoChip(
+    IconData icon,
+    String text, {
+    bool isFullWidth = false,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -1653,11 +2081,7 @@ class _RefereeDashboardScreenState
       child: Row(
         mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: Colors.white.withValues(alpha: 0.6),
-            size: 16,
-          ),
+          Icon(icon, color: Colors.white.withValues(alpha: 0.6), size: 16),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
@@ -1674,9 +2098,44 @@ class _RefereeDashboardScreenState
     );
   }
 
-  Widget _buildAcceptButton(RefereeJobModel job, user) {
+  Widget _buildAcceptButton(
+    RefereeJobModel job,
+    user, {
+    bool hasConflict = false,
+  }) {
     final isUserCertified =
-        user != null && _userCanOfficiate(job.sport, user.badges);
+        user != null && _userCanOfficiate(job.sport, user.badges ?? []);
+
+    // Show conflict warning if there's a time conflict
+    if (hasConflict) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.schedule_outlined,
+              color: Colors.grey.withValues(alpha: 0.6),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Time Conflict',
+              style: TextStyle(
+                color: Colors.grey.withValues(alpha: 0.6),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (!isUserCertified) {
       return Container(
@@ -1708,9 +2167,12 @@ class _RefereeDashboardScreenState
     }
 
     final isAcceptingThisJob = _acceptingJobId == job.id;
-    
+
     return GestureDetector(
-      onTap: _acceptingJobId != null ? null : () => _acceptJob(job, user),
+      onTap:
+          (_acceptingJobId != null || hasConflict)
+              ? null
+              : () => _acceptJob(job, user),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -1739,11 +2201,7 @@ class _RefereeDashboardScreenState
                 ),
               )
             else ...[
-              const Icon(
-                Icons.check_circle,
-                color: Colors.white,
-                size: 20,
-              ),
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Accept Job',
@@ -1829,10 +2287,10 @@ class _RefereeDashboardScreenState
           // Refresh providers and wait for data to load
           ref.invalidate(availableJobsProvider);
           ref.invalidate(userRefereeJobsProvider);
-          
+
           // Wait a moment for Firestore to propagate changes, then switch tab
           await Future.delayed(const Duration(milliseconds: 500));
-          
+
           // Re-check mounted after async operation
           if (mounted) {
             // Switch to "My Jobs" tab
@@ -1877,17 +2335,17 @@ class _RefereeDashboardScreenState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white.withValues(alpha: 0.4),
-                size: 48,
-              ),
-            )
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 48,
+                  ),
+                )
                 .animate()
                 .fadeIn(duration: 600.ms, curve: Curves.easeOut)
                 .scale(
@@ -1898,13 +2356,13 @@ class _RefereeDashboardScreenState
                 ),
             const SizedBox(height: 16),
             Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            )
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
                 .animate()
                 .fadeIn(duration: 500.ms, delay: 200.ms, curve: Curves.easeOut)
                 .slideY(begin: 0.1, end: 0, duration: 500.ms),
@@ -1916,9 +2374,11 @@ class _RefereeDashboardScreenState
                 color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 13,
               ),
-            )
-                .animate()
-                .fadeIn(duration: 500.ms, delay: 300.ms, curve: Curves.easeOut),
+            ).animate().fadeIn(
+              duration: 500.ms,
+              delay: 300.ms,
+              curve: Curves.easeOut,
+            ),
           ],
         ),
       ),
@@ -1929,13 +2389,11 @@ class _RefereeDashboardScreenState
     return ListView.builder(
       padding: const EdgeInsets.all(20),
       itemCount: 3, // Show 3 shimmer cards
-      itemBuilder: (context, index) => const Padding(
-        padding: EdgeInsets.only(bottom: 16),
-        child: ShimmerCard(
-          height: 120,
-          borderRadius: 20,
-        ),
-      ),
+      itemBuilder:
+          (context, index) => const Padding(
+            padding: EdgeInsets.only(bottom: 16),
+            child: ShimmerCard(height: 120, borderRadius: 20),
+          ),
     );
   }
 
@@ -1946,11 +2404,7 @@ class _RefereeDashboardScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: AppTheme.errorRed,
-              size: 60,
-            ),
+            const Icon(Icons.error_outline, color: AppTheme.errorRed, size: 60),
             const SizedBox(height: 16),
             const Text(
               'Something went wrong',
@@ -1993,9 +2447,7 @@ class _RefereeDashboardScreenState
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppTheme.upmRed.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: AppTheme.upmRed.withValues(alpha: 0.3)),
             ),
             child: InkWell(
               onTap: () => context.go('/referee/apply'),
@@ -2039,7 +2491,10 @@ class _RefereeDashboardScreenState
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.upmRed,
                       borderRadius: BorderRadius.circular(8),
@@ -2085,22 +2540,50 @@ class _RefereeDashboardScreenState
   }
 
   bool _userCanOfficiate(SportType sport, List<String> badges) {
+    final badgeService = ref.read(badgeServiceProvider);
+    final user = ref.read(currentUserProvider).valueOrNull;
+
+    if (user == null) return false;
+
+    // Map SportType to sport name for BadgeService
+    String sportName;
     switch (sport) {
       case SportType.football:
-        return badges.contains(AppConstants.badgeRefFootball);
+        sportName = 'football';
+        break;
       case SportType.futsal:
-        return badges.contains(AppConstants.badgeRefFutsal);
+        sportName = 'football'; // Futsal uses football badge
+        break;
       case SportType.badminton:
-        return badges.contains(AppConstants.badgeRefBadminton);
+        sportName = 'badminton';
+        break;
       case SportType.tennis:
-        return badges.contains(AppConstants.badgeRefTennis);
+        sportName = 'tennis';
+        break;
     }
+
+    return badgeService.isCertifiedFor(user, sportName);
   }
 
   Color _getSportColor(SportType sport) {
     return AppTheme.getSportColorFromType(sport);
   }
 
+  /// Get enhanced status text with additional context
+  String _getEnhancedStatusText(RefereeJobModel job) {
+    switch (job.status) {
+      case JobStatus.open:
+        return job.isPartiallyAssigned ? 'Partially assigned' : 'Open';
+      case JobStatus.assigned:
+        return job.isFullyAssigned ? 'Fully assigned' : 'Your assignment';
+      case JobStatus.completed:
+        return 'Completed';
+      case JobStatus.paid:
+        return 'Paid';
+      case JobStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
 
   Color _getStatusColor(JobStatus status) {
     switch (status) {
@@ -2146,7 +2629,11 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => 50;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return child;
   }
 
